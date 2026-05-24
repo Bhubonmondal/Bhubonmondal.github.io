@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Video Studio Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; overflow: hidden; }
+        /* Custom scrollbar for sidebar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        .pulse-red { animation: pulse-red-anim 2s infinite; }
+        @keyframes pulse-red-anim {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col md:flex-row bg-slate-900 overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-full md:w-80 h-auto md:h-full bg-slate-800 border-r border-slate-700 flex flex-col z-20 shrink-0 overflow-y-auto">
+        <div class="p-6 border-b border-slate-700 flex items-center gap-3">
+            <svg class="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">Studio Pro</h1>
+        </div>
+
+        <div class="p-6 flex-1 flex flex-col gap-6">
+            <!-- Audio Selection -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="text-sm font-medium text-slate-300 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                        Microphone
+                    </label>
+                    <span id="vol-label" class="text-xs text-slate-400 font-mono">100%</span>
+                </div>
+                <select id="audio-source" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
+                    <option value="">Loading devices...</option>
+                </select>
+                <input type="range" id="mic-volume" min="0" max="200" value="100" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 mt-2">
+            </div>
+
+            <!-- Video Selection -->
+            <div class="space-y-2">
+                <label class="text-sm font-medium text-slate-300 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    Camera
+                </label>
+                <select id="video-source" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
+                    <option value="">Loading devices...</option>
+                </select>
+            </div>
+
+            <!-- Video Effects -->
+            <div class="space-y-2">
+                <label class="text-sm font-medium text-slate-300 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg>
+                    Live Effect
+                </label>
+                <select id="video-effect" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
+                    <option value="none">Normal (No Effect)</option>
+                    <option value="grayscale(100%)">Grayscale</option>
+                    <option value="sepia(100%)">Sepia</option>
+                    <option value="invert(100%)">Invert</option>
+                    <option value="blur(8px)">Blur</option>
+                    <option value="brightness(150%)">Brighten</option>
+                    <option value="contrast(150%)">High Contrast</option>
+                    <option value="hue-rotate(90deg)">Alien (Hue Rotate)</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="space-y-2">
+                    <label class="text-sm font-medium text-slate-300 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                        Quality
+                    </label>
+                    <select id="video-resolution" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
+                        <option value="1920x1080" selected>1080p</option>
+                        <option value="1280x720">720p</option>
+                        <option value="default">Auto</option>
+                        <option value="640x480">480p</option>
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium text-slate-300 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Framerate
+                    </label>
+                    <select id="video-fps" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
+                        <option value="30">30 FPS</option>
+                        <option value="60">60 FPS</option>
+                        <option value="15">15 FPS</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Output Format Selection -->
+            <div class="space-y-2">
+                <label class="text-sm font-medium text-slate-300 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"></path></svg>
+                    Output Format
+                </label>
+                <select id="video-format" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
+                    <option value="mp4" selected>MP4 (H.264)</option>
+                    <option value="webm">WebM (VP9/VP8)</option>
+                </select>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-sm font-medium text-slate-300 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    Custom Watermark
+                </label>
+                <input type="text" id="watermark-input" placeholder="e.g., My Studio" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors text-white placeholder-slate-400">
+            </div>
+
+            <!-- Extra Tools -->
+            <div class="space-y-3 pt-4 border-t border-slate-700">
+                <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Extra Tools</h3>
+                
+                <button id="screen-share-btn" class="w-full flex items-center justify-between bg-slate-700 hover:bg-slate-600 px-4 py-2.5 rounded-lg text-sm transition-colors border border-slate-600">
+                    <span class="flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        Record Screen
+                    </span>
+                    <div class="w-8 h-4 bg-slate-800 rounded-full relative" id="screen-toggle-track">
+                        <div class="w-4 h-4 bg-slate-400 rounded-full absolute left-0 transition-all duration-200" id="screen-toggle-knob"></div>
+                    </div>
+                </button>
+
+                <button id="mute-btn" class="w-full flex items-center justify-between bg-slate-700 hover:bg-slate-600 px-4 py-2.5 rounded-lg text-sm transition-colors border border-slate-600">
+                    <span class="flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
+                        Mute Microphone
+                    </span>
+                    <div class="w-8 h-4 bg-slate-800 rounded-full relative" id="mute-toggle-track">
+                        <div class="w-4 h-4 bg-slate-400 rounded-full absolute left-0 transition-all duration-200" id="mute-toggle-knob"></div>
+                    </div>
+                </button>
+
+                <button id="snapshot-btn" class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-900/20">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Take Snapshot
+                </button>
+
+                <div class="grid grid-cols-2 gap-2 pt-2">
+                    <button id="mirror-btn" class="w-full flex flex-col items-center justify-center gap-1 bg-slate-700 hover:bg-slate-600 p-2 rounded-lg text-xs transition-colors border border-slate-600 text-slate-300">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                        Mirror Video
+                    </button>
+                    <button id="grid-btn" class="w-full flex flex-col items-center justify-center gap-1 bg-slate-700 hover:bg-slate-600 p-2 rounded-lg text-xs transition-colors border border-slate-600 text-slate-300">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                        Show Grid
+                    </button>
+                    
+                    <button id="pip-btn" class="w-full col-span-2 flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs transition-colors border border-slate-600 text-slate-300">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 3H3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2zm-2 16H5V5h14v14zm-3-6h-4v4h4v-4z"></path></svg>
+                        Picture-in-Picture Mode
+                    </button>
+
+                    <button id="countdown-btn" class="w-full col-span-2 flex items-center justify-between bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs transition-colors border border-slate-600 text-slate-300">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            3s Countdown
+                        </span>
+                        <div class="w-8 h-4 bg-indigo-500 rounded-full relative" id="countdown-toggle-track">
+                            <div class="w-4 h-4 bg-white rounded-full absolute left-0 translate-x-4 transition-all duration-200" id="countdown-toggle-knob"></div>
+                        </div>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+        
+        <!-- Recording Status Info -->
+        <div class="p-4 bg-slate-900/50 border-t border-slate-700 text-xs text-slate-400 text-center">
+            Files save dynamically to your chosen directory.
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col relative overflow-hidden bg-slate-950">
+        
+        <!-- Top bar overlay -->
+        <div class="absolute top-0 left-0 right-0 p-6 flex justify-between items-start z-10 pointer-events-none">
+            <div id="recording-indicator" class="hidden items-center gap-3 bg-black/60 backdrop-blur px-4 py-2 rounded-full border border-slate-700">
+                <div class="w-3 h-3 bg-red-500 rounded-full pulse-red"></div>
+                <span id="timer-display" class="font-mono text-lg font-medium text-white tracking-wider">00:00</span>
+            </div>
+
+            <div id="audio-meter-container" class="flex items-center gap-2 bg-black/60 backdrop-blur px-4 py-2 rounded-full border border-slate-700">
+                <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                <div class="flex items-end gap-[2px] h-4" id="audio-bars">
+                    <!-- Bars injected by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Preview Canvas -->
+        <div class="flex-1 w-full h-full p-4 md:p-8 flex items-center justify-center">
+            <div class="relative w-full max-w-5xl aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-black ring-1 ring-slate-800 bg-black group">
+                <!-- Hidden video element to capture raw camera feed -->
+                <video id="raw-video" autoplay playsinline muted class="hidden"></video>
+                <!-- Canvas to render video with effects -->
+                <canvas id="preview-canvas" class="w-full h-full object-cover"></canvas>
+
+                <div id="countdown-overlay" class="absolute inset-0 bg-black/60 flex items-center justify-center hidden z-20">
+                    <span id="countdown-number" class="text-9xl font-bold text-white drop-shadow-2xl">3</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Bar -->
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-slate-800/90 backdrop-blur-md p-3 rounded-2xl shadow-2xl border border-slate-700 z-10">
+            
+            <button id="start-btn" class="group flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-medium transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-red-500/20">
+                <div class="w-4 h-4 bg-white rounded-full group-hover:scale-110 transition-transform"></div>
+                Start Recording
+            </button>
+
+            <button id="pause-btn" disabled class="hidden items-center gap-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-medium transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span id="pause-text">Pause</span>
+            </button>
+
+            <button id="stop-btn" disabled class="hidden items-center gap-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-medium transition-all">
+                <div class="w-4 h-4 bg-white rounded-sm"></div>
+                Stop
+            </button>
+            
+        </div>
+    </main>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-24 right-8 flex flex-col gap-2 z-50 pointer-events-none"></div>
+
+    <!-- Message Box (Custom Alert) -->
+    <div id="message-box" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl max-w-sm w-full shadow-2xl transform scale-95 transition-transform duration-300" id="message-content">
+            <h3 class="text-xl font-bold mb-2 text-white" id="msg-title">Alert</h3>
+            <p class="text-slate-300 mb-6" id="msg-body">Message</p>
+            <div class="flex justify-end">
+                <button id="msg-close" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg font-medium transition-colors">Okay</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const audioSelect = document.getElementById('audio-source');
+        const videoSelect = document.getElementById('video-source');
+        const effectSelect = document.getElementById('video-effect');
+        const rawVideo = document.getElementById('raw-video');
+        const canvas = document.getElementById('preview-canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const snapshotBtn = document.getElementById('snapshot-btn');
+        const screenShareBtn = document.getElementById('screen-share-btn');
+        const muteBtn = document.getElementById('mute-btn');
+        
+        const recordingIndicator = document.getElementById('recording-indicator');
+        const timerDisplay = document.getElementById('timer-display');
+        const pauseText = document.getElementById('pause-text');
+
+        // State variables
+        let mediaRecorder;
+        let recordedChunks = [];
+        let rawStream = null;
+        let audioStream = null;
+        let isScreenRecording = false;
+        let isMuted = false;
+        let currentFilter = 'none';
+        let animationFrameId;
+        
+        let isMirrored = false;
+        let showGrid = false;
+        let useCountdown = true;
+        let audioContext, analyser, microphone, dataArray;
+        let audioMeterAnimationFrame;
+        const NUM_AUDIO_BARS = 10;
+        
+        let masterGain = null;
+        let audioDest = null;
+
+        // Timer variables
+        let timerInterval;
+        let secondsRecorded = 0;
+        let isPaused = false;
+
+        // Configuration
+        let CANVAS_WIDTH = 1920;
+        let CANVAS_HEIGHT = 1080;
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+
+        // Custom Message Box
+        function showMessage(title, message) {
+            const box = document.getElementById('message-box');
+            const content = document.getElementById('message-content');
+            document.getElementById('msg-title').textContent = title;
+            document.getElementById('msg-body').textContent = message;
+            box.classList.remove('hidden');
+            // Trigger reflow
+            void box.offsetWidth;
+            box.classList.remove('opacity-0');
+            content.classList.remove('scale-95');
+        }
+
+        document.getElementById('msg-close').addEventListener('click', () => {
+            const box = document.getElementById('message-box');
+            const content = document.getElementById('message-content');
+            box.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => box.classList.add('hidden'), 300);
+        });
+
+        // Toast Notification
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const color = type === 'success' ? 'bg-emerald-500' : (type === 'error' ? 'bg-red-500' : 'bg-slate-700');
+            toast.className = `${color} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 transform translate-x-8 opacity-0 transition-all duration-300`;
+            toast.innerHTML = `<span class="text-sm font-medium">${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-8', 'opacity-0');
+            });
+            
+            // Animate out
+            setTimeout(() => {
+                toast.classList.add('translate-x-8', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Device Management
+        async function getDevices() {
+            try {
+                // Request initial generic permission to get device labels
+                const tempStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                tempStream.getTracks().forEach(track => track.stop());
+
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                
+                audioSelect.innerHTML = '';
+                videoSelect.innerHTML = '';
+
+                devices.forEach(device => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.text = device.label || `${device.kind} (${device.deviceId.slice(0, 5)}...)`;
+                    
+                    if (device.kind === 'audioinput') {
+                        audioSelect.appendChild(option);
+                    } else if (device.kind === 'videoinput') {
+                        videoSelect.appendChild(option);
+                    }
+                });
+
+                if(audioSelect.options.length === 0) audioSelect.innerHTML = '<option>No microphone found</option>';
+                if(videoSelect.options.length === 0) videoSelect.innerHTML = '<option>No camera found</option>';
+
+            } catch (error) {
+                console.error('Error fetching devices:', error);
+                showMessage('Permission Required', 'Please allow camera and microphone access to use the studio features.');
+            }
+        }
+
+        async function updateAudioStream() {
+            if (audioStream) audioStream.getTracks().forEach(t => t.stop());
+
+            const audioId = audioSelect.value;
+            const audioConstraints = audioId 
+                ? { deviceId: { exact: audioId }, echoCancellation: true, noiseSuppression: true } 
+                : { echoCancellation: true, noiseSuppression: true };
+            
+            try {
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+                audioStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
+                setupAudioMeter(audioStream);
+            } catch (err) {
+                console.error("Audio Error:", err);
+                showToast('Failed to access microphone.', 'error');
+            }
+        }
+
+        async function updateVideoStream() {
+            if (rawStream) rawStream.getTracks().forEach(t => t.stop());
+
+            const videoId = videoSelect.value;
+            const resSelect = document.getElementById('video-resolution');
+            
+            let videoConstraints = videoId ? { deviceId: { exact: videoId } } : {};
+            
+            if (resSelect && resSelect.value !== 'default') {
+                const [w, h] = resSelect.value.split('x').map(Number);
+                videoConstraints.width = { ideal: w };
+                videoConstraints.height = { ideal: h };
+                
+                // Keep Canvas in sync with startup resolution
+                CANVAS_WIDTH = w;
+                CANVAS_HEIGHT = h;
+            } else {
+                CANVAS_WIDTH = 1920;
+                CANVAS_HEIGHT = 1080;
+            }
+            
+            canvas.width = CANVAS_WIDTH;
+            canvas.height = CANVAS_HEIGHT;
+
+            if (Object.keys(videoConstraints).length === 0) {
+                videoConstraints = true;
+            }
+
+            try {
+                if (isScreenRecording) {
+                    rawStream = await navigator.mediaDevices.getDisplayMedia({ 
+                        video: { cursor: "always" } 
+                    });
+                    
+                    // Listen for built-in browser "Stop Sharing" button
+                    rawStream.getVideoTracks()[0].onended = () => {
+                        isScreenRecording = false;
+                        updateToggleUI(document.getElementById('screen-toggle-knob'), document.getElementById('screen-toggle-track'), false);
+                        updateVideoStream(); // Revert back to camera
+                    };
+                } else {
+                    rawStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
+                }
+
+                rawVideo.srcObject = rawStream;
+                rawVideo.play();
+                
+                if (!animationFrameId) {
+                    renderCanvas();
+                }
+            } catch (err) {
+                if (isScreenRecording) {
+                    // Reset screen recording state
+                    isScreenRecording = false;
+                    const knob = document.getElementById('screen-toggle-knob');
+                    const track = document.getElementById('screen-toggle-track');
+                    if (knob && track) updateToggleUI(knob, track, false);
+                    
+                    if (err.name === 'NotAllowedError' || (err.message && err.message.toLowerCase().includes('permissions policy'))) {
+                        showMessage('Screen Share Blocked', 'Screen sharing is restricted in this preview environment. Save this file and open it locally to use this feature.');
+                    } else {
+                        showToast('Screen sharing canceled or denied.', 'error');
+                    }
+                    
+                    // Automatically fallback to standard camera
+                    setTimeout(() => updateVideoStream(), 100);
+                } else {
+                    console.error("Camera Error:", err);
+                    showMessage('Device Error', 'Failed to access camera. Please ensure permissions are granted in your browser settings.');
+                }
+            }
+        }
+
+        async function updateResolution() {
+            if (!rawStream || isScreenRecording) return;
+            const resSelect = document.getElementById('video-resolution');
+            const videoTrack = rawStream.getVideoTracks()[0];
+            
+            if (videoTrack && resSelect) {
+                let constraints = {};
+                if (resSelect.value !== 'default') {
+                    const [w, h] = resSelect.value.split('x').map(Number);
+                    constraints = { width: { ideal: w }, height: { ideal: h } };
+                    
+                    CANVAS_WIDTH = w;
+                    CANVAS_HEIGHT = h;
+                } else {
+                    CANVAS_WIDTH = 1920;
+                    CANVAS_HEIGHT = 1080;
+                }
+                
+                canvas.width = CANVAS_WIDTH;
+                canvas.height = CANVAS_HEIGHT;
+                
+                try {
+                    // Dynamically apply quality change without restarting the stream!
+                    await videoTrack.applyConstraints(constraints);
+                    showToast('Quality updated', 'success');
+                } catch (err) {
+                    console.error("Failed to apply constraints, restarting stream...", err);
+                    updateVideoStream(); // Fallback if browser doesn't support live constraints
+                }
+            }
+        }
+
+        function setupAudioMeter(stream) {
+            if (audioContext) audioContext.close();
+            
+            const barsContainer = document.getElementById('audio-bars');
+            barsContainer.innerHTML = '';
+            for(let i=0; i<NUM_AUDIO_BARS; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'w-1 bg-indigo-500 rounded-t-sm transition-all duration-75';
+                bar.style.height = '2px';
+                barsContainer.appendChild(bar);
+            }
+
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+                
+                // Initialize Master Gain for Volume Control slider
+                masterGain = audioContext.createGain();
+                const volControl = document.getElementById('mic-volume');
+                if (volControl) {
+                    masterGain.gain.value = volControl.value / 100;
+                }
+                
+                // Initialize MediaStreamDestination to route modified audio back to the MediaRecorder
+                audioDest = audioContext.createMediaStreamDestination();
+                
+                // Route: Microphone -> Gain Node -> Analyser (Visuals) AND Destination (Recording)
+                microphone.connect(masterGain);
+                masterGain.connect(analyser);
+                masterGain.connect(audioDest);
+
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+                
+                function drawAudioMeter() {
+                    if(!audioContext || isMuted) {
+                        const bars = document.getElementById('audio-bars').children;
+                        for(let i=0; i<bars.length; i++) bars[i].style.height = '2px';
+                    } else {
+                        analyser.getByteFrequencyData(dataArray);
+                        const bars = document.getElementById('audio-bars').children;
+                        const step = Math.floor(bufferLength / NUM_AUDIO_BARS);
+                        
+                        for (let i = 0; i < NUM_AUDIO_BARS; i++) {
+                            let sum = 0;
+                            for (let j = 0; j < step; j++) {
+                                sum += dataArray[(i * step) + j];
+                            }
+                            const average = sum / step;
+                            const height = Math.max(2, (average / 255) * 16);
+                            
+                            if (average > 200) {
+                                bars[i].className = 'w-1 bg-red-500 rounded-t-sm transition-all duration-75';
+                            } else if (average > 150) {
+                                bars[i].className = 'w-1 bg-yellow-400 rounded-t-sm transition-all duration-75';
+                            } else {
+                                bars[i].className = 'w-1 bg-indigo-400 rounded-t-sm transition-all duration-75';
+                            }
+                            
+                            bars[i].style.height = `${height}px`;
+                        }
+                    }
+                    audioMeterAnimationFrame = requestAnimationFrame(drawAudioMeter);
+                }
+                
+                if (audioMeterAnimationFrame) cancelAnimationFrame(audioMeterAnimationFrame);
+                drawAudioMeter();
+            } catch(e) {
+                console.warn("Audio Context setup pending user interaction.");
+            }
+        }
+
+        // Canvas Rendering Loop
+        function renderCanvas() {
+            if (rawVideo.readyState >= 2) {
+                // Determine crop to maintain aspect ratio
+                const videoAspect = rawVideo.videoWidth / rawVideo.videoHeight;
+                const canvasAspect = CANVAS_WIDTH / CANVAS_HEIGHT;
+                
+                let drawWidth, drawHeight, offsetX, offsetY;
+
+                if (videoAspect > canvasAspect) {
+                    drawHeight = CANVAS_HEIGHT;
+                    drawWidth = drawHeight * videoAspect;
+                    offsetX = (CANVAS_WIDTH - drawWidth) / 2;
+                    offsetY = 0;
+                } else {
+                    drawWidth = CANVAS_WIDTH;
+                    drawHeight = drawWidth / videoAspect;
+                    offsetX = 0;
+                    offsetY = (CANVAS_HEIGHT - drawHeight) / 2;
+                }
+
+                // Apply selected CSS filter directly to canvas context
+                ctx.filter = currentFilter;
+                
+                // Clear and draw
+                ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                
+                ctx.save();
+                if (isMirrored && !isScreenRecording) {
+                    ctx.translate(CANVAS_WIDTH, 0);
+                    ctx.scale(-1, 1);
+                }
+                
+                ctx.drawImage(rawVideo, offsetX, offsetY, drawWidth, drawHeight);
+                ctx.restore(); // Restore before drawing non-mirrored elements (text, grid)
+                ctx.filter = 'none'; // Reset filter for overlays
+
+                // Draw Watermark
+                const watermarkText = document.getElementById('watermark-input')?.value;
+                if (watermarkText) {
+                    ctx.font = 'bold 36px Inter, sans-serif';
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+                    ctx.shadowBlur = 6;
+                    ctx.shadowOffsetX = 2;
+                    ctx.shadowOffsetY = 2;
+                    ctx.fillText(watermarkText, 40, CANVAS_HEIGHT - 40);
+                    ctx.shadowColor = 'transparent'; // reset
+                }
+
+                // Draw Rule of Thirds Grid
+                if (showGrid) {
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    // Vertical lines
+                    ctx.moveTo(CANVAS_WIDTH / 3, 0); ctx.lineTo(CANVAS_WIDTH / 3, CANVAS_HEIGHT);
+                    ctx.moveTo((CANVAS_WIDTH / 3) * 2, 0); ctx.lineTo((CANVAS_WIDTH / 3) * 2, CANVAS_HEIGHT);
+                    // Horizontal lines
+                    ctx.moveTo(0, CANVAS_HEIGHT / 3); ctx.lineTo(CANVAS_WIDTH, CANVAS_HEIGHT / 3);
+                    ctx.moveTo(0, (CANVAS_HEIGHT / 3) * 2); ctx.lineTo(CANVAS_WIDTH, (CANVAS_HEIGHT / 3) * 2);
+                    ctx.stroke();
+                }
+            }
+            
+            animationFrameId = requestAnimationFrame(renderCanvas);
+        }
+
+        // Timer Logic
+        function updateTimer() {
+            const mins = Math.floor(secondsRecorded / 60).toString().padStart(2, '0');
+            const secs = (secondsRecorded % 60).toString().padStart(2, '0');
+            timerDisplay.textContent = `${mins}:${secs}`;
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (!isPaused) {
+                    secondsRecorded++;
+                    updateTimer();
+                }
+            }, 1000);
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            secondsRecorded = 0;
+            updateTimer();
+        }
+
+        // Recording Logic
+        async function startRecording() {
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
+            if (useCountdown) {
+                const overlay = document.getElementById('countdown-overlay');
+                const num = document.getElementById('countdown-number');
+                overlay.classList.remove('hidden');
+                startBtn.disabled = true; 
+                
+                for(let i = 3; i > 0; i--) {
+                    num.textContent = i;
+                    num.style.transform = 'scale(0.5)';
+                    num.style.opacity = '0';
+                    setTimeout(() => {
+                        num.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                        num.style.transform = 'scale(1)';
+                        num.style.opacity = '1';
+                    }, 50);
+                    
+                    if(audioContext && audioContext.state === 'running') {
+                        const osc = audioContext.createOscillator();
+                        const gain = audioContext.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioContext.destination);
+                        osc.frequency.value = 800;
+                        gain.gain.setValueAtTime(0.05, audioContext.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+                        osc.start();
+                        osc.stop(audioContext.currentTime + 0.1);
+                    }
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+                
+                overlay.classList.add('hidden');
+                startBtn.disabled = false;
+                
+                if(audioContext && audioContext.state === 'running') {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+                    osc.frequency.value = 1200;
+                    gain.gain.setValueAtTime(0.05, audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioContext.currentTime + 0.3);
+                }
+            }
+
+            recordedChunks = [];
+            
+            // Capture requested FPS from dropdown
+            const fps = parseInt(document.getElementById('video-fps')?.value || 30);
+            
+            // Capture video from canvas at specified fps
+            const canvasStream = canvas.captureStream(fps);
+            
+            // Combine with processed audio tracks (with gain applied) or fallback to raw
+            const audioTracksToRecord = audioDest ? audioDest.stream.getAudioTracks() : audioStream.getAudioTracks();
+            
+            const tracks = [
+                ...canvasStream.getVideoTracks(),
+                ...audioTracksToRecord
+            ];
+            
+            const combinedStream = new MediaStream(tracks);
+
+            // Attempt to use high-quality encoding based on format selection
+            const requestedFormat = document.getElementById('video-format')?.value || 'mp4';
+            let mimeType = 'video/mp4';
+            let fileExtension = 'mp4';
+            
+            if (requestedFormat === 'mp4') {
+                if (MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.4d002a, mp4a.40.2"')) {
+                    mimeType = 'video/mp4; codecs="avc1.4d002a, mp4a.40.2"';
+                } else if (MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.42E01E, mp4a.40.2"')) {
+                    mimeType = 'video/mp4; codecs="avc1.42E01E, mp4a.40.2"';
+                } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+                    mimeType = 'video/mp4';
+                } else {
+                    showToast('MP4 not natively supported here. Falling back to WebM.', 'error');
+                    fileExtension = 'webm';
+                    mimeType = 'video/webm; codecs=vp9';
+                }
+            } else {
+                fileExtension = 'webm';
+                if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) {
+                    mimeType = 'video/webm; codecs=vp9';
+                } else if (MediaRecorder.isTypeSupported('video/webm; codecs=vp8')) {
+                    mimeType = 'video/webm; codecs=vp8';
+                } else {
+                    mimeType = 'video/webm';
+                }
+            }
+
+            const options = { mimeType };
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                 options.mimeType = ''; // Fallback if still unsupported
+            }
+
+            mediaRecorder = new MediaRecorder(combinedStream, options);
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const finalMimeType = options.mimeType || 'video/webm';
+                const blob = new Blob(recordedChunks, { type: finalMimeType });
+                await saveRecording(blob, fileExtension, finalMimeType);
+                resetTimer();
+                showToast('Recording saved securely.', 'success');
+            };
+
+            mediaRecorder.start(1000); // chunk every second
+            isPaused = false;
+            
+            // UI Updates
+            startBtn.classList.add('hidden');
+            pauseBtn.classList.remove('hidden');
+            pauseBtn.classList.add('flex');
+            stopBtn.classList.remove('hidden');
+            stopBtn.classList.add('flex');
+            pauseBtn.disabled = false;
+            stopBtn.disabled = false;
+            recordingIndicator.classList.remove('hidden');
+            recordingIndicator.classList.add('flex');
+            
+            startTimer();
+            showToast('Recording started.');
+        }
+
+        async function saveRecording(blob, ext = 'webm', mimeType = 'video/webm') {
+            const filename = `StudioRecording_${new Date().toISOString().replace(/[:.]/g, '-')}.${ext}`;
+            
+            try {
+                // Try modern File System Access API
+                if ('showSaveFilePicker' in window) {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: filename,
+                        types: [{
+                            description: 'Video File',
+                            accept: { [mimeType]: [`.${ext}`] },
+                        }],
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                } else {
+                    // Fallback to traditional download
+                    throw new Error('File System Access API not supported');
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    // Fallback execution
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                    }, 100);
+                } else {
+                    showToast('Save cancelled.', 'error');
+                }
+            }
+        }
+
+        // Event Listeners
+        audioSelect.addEventListener('change', updateAudioStream);
+        videoSelect.addEventListener('change', updateVideoStream);
+        
+        document.getElementById('video-resolution')?.addEventListener('change', updateResolution);
+        
+        document.getElementById('mirror-btn')?.addEventListener('click', (e) => {
+            isMirrored = !isMirrored;
+            const btn = e.currentTarget;
+            if(isMirrored) {
+                btn.classList.replace('bg-slate-700', 'bg-indigo-600');
+                btn.classList.replace('border-slate-600', 'border-indigo-500');
+                btn.classList.replace('text-slate-300', 'text-white');
+            } else {
+                btn.classList.replace('bg-indigo-600', 'bg-slate-700');
+                btn.classList.replace('border-indigo-500', 'border-slate-600');
+                btn.classList.replace('text-white', 'text-slate-300');
+            }
+        });
+
+        document.getElementById('grid-btn')?.addEventListener('click', (e) => {
+            showGrid = !showGrid;
+            const btn = e.currentTarget;
+            if(showGrid) {
+                btn.classList.replace('bg-slate-700', 'bg-indigo-600');
+                btn.classList.replace('border-slate-600', 'border-indigo-500');
+                btn.classList.replace('text-slate-300', 'text-white');
+            } else {
+                btn.classList.replace('bg-indigo-600', 'bg-slate-700');
+                btn.classList.replace('border-indigo-500', 'border-slate-600');
+                btn.classList.replace('text-white', 'text-slate-300');
+            }
+        });
+
+        document.getElementById('countdown-btn')?.addEventListener('click', () => {
+            useCountdown = !useCountdown;
+            updateToggleUI(document.getElementById('countdown-toggle-knob'), document.getElementById('countdown-toggle-track'), useCountdown);
+        });
+
+        document.getElementById('mic-volume')?.addEventListener('input', (e) => {
+            const val = e.target.value;
+            document.getElementById('vol-label').textContent = `${val}%`;
+            // Apply volume dynamically in real-time
+            if (masterGain) {
+                masterGain.gain.value = val / 100;
+            }
+        });
+
+        document.getElementById('pip-btn')?.addEventListener('click', async () => {
+            try {
+                if (document.pictureInPictureElement) {
+                    await document.exitPictureInPicture();
+                } else if (rawVideo.readyState >= 2) {
+                    // Start Picture-in-Picture using the hidden raw video feed
+                    await rawVideo.requestPictureInPicture();
+                }
+            } catch (error) {
+                console.error("PiP Error:", error);
+                showToast('Picture-in-Picture failed. Check permissions.', 'error');
+            }
+        });
+
+        effectSelect.addEventListener('change', (e) => {
+            currentFilter = e.target.value;
+        });
+
+        startBtn.addEventListener('click', startRecording);
+        
+        pauseBtn.addEventListener('click', () => {
+            if (!mediaRecorder) return;
+            
+            if (mediaRecorder.state === 'recording') {
+                mediaRecorder.pause();
+                isPaused = true;
+                pauseText.textContent = 'Resume';
+                pauseBtn.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>Resume</span>
+                `;
+                recordingIndicator.querySelector('.w-3').classList.remove('pulse-red');
+                recordingIndicator.querySelector('.w-3').classList.add('bg-yellow-500');
+            } else if (mediaRecorder.state === 'paused') {
+                mediaRecorder.resume();
+                isPaused = false;
+                pauseText.textContent = 'Pause';
+                pauseBtn.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>Pause</span>
+                `;
+                recordingIndicator.querySelector('.w-3').classList.add('pulse-red');
+                recordingIndicator.querySelector('.w-3').classList.remove('bg-yellow-500');
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                
+                // Reset UI
+                startBtn.classList.remove('hidden');
+                pauseBtn.classList.add('hidden');
+                pauseBtn.classList.remove('flex');
+                stopBtn.classList.add('hidden');
+                stopBtn.classList.remove('flex');
+                recordingIndicator.classList.add('hidden');
+                recordingIndicator.classList.remove('flex');
+                
+                // Reset Pause button state
+                isPaused = false;
+                pauseBtn.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>Pause</span>
+                `;
+                recordingIndicator.querySelector('.w-3').classList.add('pulse-red', 'bg-red-500');
+                recordingIndicator.querySelector('.w-3').classList.remove('bg-yellow-500');
+            }
+        });
+
+        // Toggle UI helper
+        function updateToggleUI(knob, track, state) {
+            if (state) {
+                knob.classList.add('translate-x-4', 'bg-white');
+                knob.classList.remove('bg-slate-400');
+                track.classList.add('bg-indigo-500');
+                track.classList.remove('bg-slate-800');
+            } else {
+                knob.classList.remove('translate-x-4', 'bg-white');
+                knob.classList.add('bg-slate-400');
+                track.classList.remove('bg-indigo-500');
+                track.classList.add('bg-slate-800');
+            }
+        }
+
+        screenShareBtn.addEventListener('click', () => {
+            isScreenRecording = !isScreenRecording;
+            updateToggleUI(document.getElementById('screen-toggle-knob'), document.getElementById('screen-toggle-track'), isScreenRecording);
+            updateVideoStream();
+        });
+
+        muteBtn.addEventListener('click', () => {
+            isMuted = !isMuted;
+            if (audioStream) {
+                audioStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
+            }
+            updateToggleUI(document.getElementById('mute-toggle-knob'), document.getElementById('mute-toggle-track'), isMuted);
+            showToast(isMuted ? 'Microphone muted.' : 'Microphone unmuted.');
+        });
+
+        snapshotBtn.addEventListener('click', () => {
+            // Get data URL from canvas (which includes filters)
+            const dataUrl = canvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = `Snapshot_${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            // Visual flash effect
+            const flash = document.createElement('div');
+            flash.className = 'absolute inset-0 bg-white z-50 pointer-events-none transition-opacity duration-500';
+            document.querySelector('main').appendChild(flash);
+            
+            // Trigger reflow
+            void flash.offsetWidth;
+            flash.classList.add('opacity-0');
+            
+            setTimeout(() => flash.remove(), 500);
+            showToast('Snapshot saved.', 'success');
+        });
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            getDevices().then(() => {
+                updateAudioStream();
+                updateVideoStream();
+            });
+        });
+
+    </script>
+</body>
+</html>
