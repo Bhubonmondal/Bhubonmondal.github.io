@@ -6,9 +6,15 @@
     <title>Web Video Studio Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- PDF.js Native Viewer Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; overflow: hidden; }
-        /* Custom scrollbar for sidebar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
@@ -20,169 +26,303 @@
             70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
+
+        /* Input Range Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: #1e293b;
+            border-radius: 8px;
+            height: 6px;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* Details/Summary styles for collapsible sections */
+        details > summary { list-style: none; cursor: pointer; }
+        details > summary::-webkit-details-marker { display: none; }
     </style>
 </head>
 <body class="h-screen w-full flex flex-col md:flex-row bg-slate-900 overflow-hidden">
 
     <!-- Sidebar -->
     <aside class="w-full md:w-80 h-auto md:h-full bg-slate-800 border-r border-slate-700 flex flex-col z-20 shrink-0 overflow-y-auto">
-        <div class="p-6 border-b border-slate-700 flex items-center gap-3">
-            <svg class="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-            <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">Studio Pro</h1>
+        <div class="p-5 border-b border-slate-700 flex items-center gap-3 shrink-0">
+            <svg class="w-7 h-7 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            <h1 class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">Studio Pro</h1>
         </div>
 
-        <div class="p-6 flex-1 flex flex-col gap-6">
-            <!-- Audio Selection -->
-            <div class="space-y-2">
-                <div class="flex items-center justify-between">
-                    <label class="text-sm font-medium text-slate-300 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-                        Microphone
-                    </label>
-                    <span id="vol-label" class="text-xs text-slate-400 font-mono">100%</span>
+        <div class="p-5 flex-1 flex flex-col gap-4 overflow-y-auto">
+            
+            <!-- Devices & Format -->
+            <details class="bg-slate-700/30 rounded-xl border border-slate-700 group" open>
+                <summary class="p-3 font-semibold text-sm text-slate-300 flex justify-between items-center select-none hover:bg-slate-700/50 rounded-xl transition-colors">
+                    Devices & Quality
+                    <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </summary>
+                <div class="p-3 pt-0 space-y-3">
+                    <div class="space-y-1">
+                        <label class="text-xs font-medium text-slate-400">Microphone</label>
+                        <select id="audio-source" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white">
+                            <option value="">Loading devices...</option>
+                        </select>
+                        <div class="flex items-center gap-2 pt-1">
+                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                            <input type="range" id="mic-volume" min="0" max="200" value="100" class="w-full">
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-medium text-slate-400">Camera</label>
+                        <select id="video-source" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white">
+                            <option value="">Loading devices...</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-medium text-slate-400">Resolution</label>
+                        <select id="video-resolution" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-2 py-1.5 text-xs text-white">
+                            <option value="1920x1080" selected>1080p</option>
+                            <option value="1280x720">720p</option>
+                            <option value="default">Auto</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="space-y-1">
+                            <label class="text-xs font-medium text-slate-400">Camera Hz</label>
+                            <select id="camera-hz" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-2 py-1.5 text-xs text-white" title="Match local power line frequency to avoid flicker">
+                                <option value="auto">Auto</option>
+                                <option value="50">50 Hz</option>
+                                <option value="60" selected>60 Hz</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-medium text-slate-400">Rec FPS</label>
+                            <select id="video-fps" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-2 py-1.5 text-xs text-white">
+                                <option value="30">30 FPS</option>
+                                <option value="60" selected>60 FPS</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-medium text-slate-400">Output Format</label>
+                        <select id="video-format" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-2 py-1.5 text-xs text-white">
+                            <option value="mp4" selected>MP4 (H.264)</option>
+                            <option value="webm">WebM (VP9/VP8)</option>
+                        </select>
+                    </div>
                 </div>
-                <select id="audio-source" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
-                    <option value="">Loading devices...</option>
-                </select>
-                <input type="range" id="mic-volume" min="0" max="200" value="100" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 mt-2">
-            </div>
+            </details>
 
-            <!-- Video Selection -->
-            <div class="space-y-2">
-                <label class="text-sm font-medium text-slate-300 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                    Camera
-                </label>
-                <select id="video-source" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
-                    <option value="">Loading devices...</option>
-                </select>
-            </div>
+            <!-- PDF & Media Presentation -->
+            <details class="bg-slate-700/30 rounded-xl border border-slate-700 group">
+                <summary class="p-3 font-semibold text-sm text-slate-300 flex justify-between items-center select-none hover:bg-slate-700/50 rounded-xl transition-colors">
+                    <span class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Present Media (PDF/Img)
+                    </span>
+                    <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </summary>
+                <div class="p-3 pt-0 space-y-3">
+                    <input type="file" id="pdf-upload" accept="application/pdf, image/*" multiple class="hidden">
+                    <button id="pdf-upload-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium py-2 rounded-lg transition-colors shadow-lg shadow-indigo-500/20">
+                        Select PDF or Image
+                    </button>
+                    
+                    <div id="pdf-controls" class="hidden flex-col gap-3">
+                        
+                        <!-- Media Queue List -->
+                        <div class="space-y-1">
+                            <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Presentation Queue</label>
+                            <div id="media-list-container" class="max-h-24 overflow-y-auto space-y-1 pr-1"></div>
+                            <button id="pdf-upload-btn-secondary" class="w-full bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white text-xs font-medium py-1.5 rounded-lg transition-colors mt-1">
+                                + Add More Files
+                            </button>
+                        </div>
 
-            <!-- Video Effects -->
-            <div class="space-y-2">
-                <label class="text-sm font-medium text-slate-300 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg>
-                    Live Effect
-                </label>
-                <select id="video-effect" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
-                    <option value="none">Normal (No Effect)</option>
-                    <option value="grayscale(100%)">Grayscale</option>
-                    <option value="sepia(100%)">Sepia</option>
-                    <option value="invert(100%)">Invert</option>
-                    <option value="blur(8px)">Blur</option>
-                    <option value="brightness(150%)">Brighten</option>
-                    <option value="contrast(150%)">High Contrast</option>
-                    <option value="hue-rotate(90deg)">Alien (Hue Rotate)</option>
-                </select>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-                <div class="space-y-2">
-                    <label class="text-sm font-medium text-slate-300 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
-                        Quality
-                    </label>
-                    <select id="video-resolution" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
-                        <option value="1920x1080" selected>1080p</option>
-                        <option value="1280x720">720p</option>
-                        <option value="default">Auto</option>
-                        <option value="640x480">480p</option>
-                    </select>
+                        <!-- PDF specific pagination -->
+                        <div id="pdf-page-controls" class="flex items-center justify-between gap-2 bg-slate-800 p-2 rounded-lg border border-slate-600">
+                            <button id="pdf-prev" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs text-white">&larr; Prev</button>
+                            <span class="text-xs font-mono text-slate-300">Page <span id="pdf-page-num" class="text-white font-bold">1</span> / <span id="pdf-page-count">?</span></span>
+                            <button id="pdf-next" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs text-white">Next &rarr;</button>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label class="text-xs font-medium text-slate-400 flex justify-between">Media Zoom <span id="val-pdf-zoom">1.0x</span></label>
+                            <input type="range" id="pdf-zoom" min="0.5" max="4.0" step="0.1" value="1" class="w-full">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-medium text-slate-400 flex justify-between">Scroll Y <span id="val-pdf-pany">0%</span></label>
+                            <input type="range" id="pdf-pan-y" min="-100" max="100" value="0" class="w-full">
+                        </div>
+                        <button id="pdf-close-btn" class="w-full bg-slate-800 hover:bg-slate-700 text-red-400 border border-red-900/50 text-xs font-medium py-2 rounded-lg transition-colors">
+                            Close All Media
+                        </button>
+                    </div>
                 </div>
-                <div class="space-y-2">
-                    <label class="text-sm font-medium text-slate-300 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        Framerate
-                    </label>
-                    <select id="video-fps" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
-                        <option value="30">30 FPS</option>
-                        <option value="60">60 FPS</option>
-                        <option value="15">15 FPS</option>
-                    </select>
+            </details>
+
+            <!-- Camera Adjustments -->
+            <details class="bg-slate-700/30 rounded-xl border border-slate-700 group">
+                <summary class="p-3 font-semibold text-sm text-slate-300 flex justify-between items-center select-none hover:bg-slate-700/50 rounded-xl transition-colors">
+                    Camera Crop & Adjust
+                    <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </summary>
+                <div class="p-3 pt-0 space-y-4">
+                    <div class="space-y-2">
+                        <label class="text-xs font-medium text-slate-400 flex justify-between">
+                            Zoom/Crop <span id="val-zoom">1.0x</span>
+                        </label>
+                        <input type="range" id="cam-zoom" min="1" max="3" step="0.1" value="1" class="w-full">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-medium text-slate-400 flex justify-between">
+                            Pan X <span id="val-panx">0%</span>
+                        </label>
+                        <input type="range" id="cam-pan-x" min="-100" max="100" value="0" class="w-full">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-medium text-slate-400 flex justify-between">
+                            Pan Y <span id="val-pany">0%</span>
+                        </label>
+                        <input type="range" id="cam-pan-y" min="-100" max="100" value="0" class="w-full">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-medium text-slate-400">Live Effect</label>
+                        <select id="video-effect" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-2 py-1.5 text-xs text-white">
+                            <option value="none">Normal</option>
+                            <option value="grayscale(100%)">Grayscale</option>
+                            <option value="sepia(100%)">Sepia</option>
+                            <option value="blur(5px)">Blur</option>
+                            <option value="brightness(130%)">Brighten</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-medium text-slate-400">Watermark</label>
+                        <input type="text" id="watermark-input" placeholder="e.g., My Studio" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-2 py-1.5 text-xs text-white">
+                    </div>
                 </div>
-            </div>
+            </details>
 
-            <!-- Output Format Selection -->
-            <div class="space-y-2">
-                <label class="text-sm font-medium text-slate-300 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"></path></svg>
-                    Output Format
-                </label>
-                <select id="video-format" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
-                    <option value="mp4" selected>MP4 (H.264)</option>
-                    <option value="webm">WebM (VP9/VP8)</option>
-                </select>
-            </div>
+            <!-- PIP Style -->
+            <details class="bg-slate-700/30 rounded-xl border border-slate-700 group">
+                <summary class="p-3 font-semibold text-sm text-slate-300 flex justify-between items-center select-none hover:bg-slate-700/50 rounded-xl transition-colors">
+                    PIP & Overlay Style
+                    <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </summary>
+                <div class="p-3 pt-0 space-y-4">
+                    <div class="space-y-2">
+                        <label class="text-xs font-medium text-slate-400 flex justify-between">
+                            Bubble Size <span id="val-pip-size">150px</span>
+                        </label>
+                        <input type="range" id="pip-size" min="80" max="400" step="10" value="150" class="w-full">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-medium text-slate-400 flex justify-between">
+                            Border Width <span id="val-pip-border">6px</span>
+                        </label>
+                        <input type="range" id="pip-border-width" min="0" max="20" step="1" value="6" class="w-full">
+                    </div>
+                    <div class="space-y-1 flex items-center justify-between">
+                        <label class="text-xs font-medium text-slate-400">Border Color</label>
+                        <input type="color" id="pip-border-color" value="#ffffff" class="w-8 h-8 rounded cursor-pointer bg-transparent border-0 p-0">
+                    </div>
+                </div>
+            </details>
 
-            <div class="space-y-2">
-                <label class="text-sm font-medium text-slate-300 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                    Custom Watermark
-                </label>
-                <input type="text" id="watermark-input" placeholder="e.g., My Studio" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors text-white placeholder-slate-400">
-            </div>
-
-            <!-- Extra Tools -->
-            <div class="space-y-3 pt-4 border-t border-slate-700">
-                <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Extra Tools</h3>
-                
-                <button id="screen-share-btn" class="w-full flex items-center justify-between bg-slate-700 hover:bg-slate-600 px-4 py-2.5 rounded-lg text-sm transition-colors border border-slate-600">
+            <!-- Tools & Toggles -->
+            <div class="space-y-2 pt-2 border-t border-slate-700">
+                <button id="screen-share-btn" class="w-full flex items-center justify-between bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 border border-emerald-500/30 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors">
                     <span class="flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                        Record Screen
+                        Share Screen (YT PIP)
                     </span>
                     <div class="w-8 h-4 bg-slate-800 rounded-full relative" id="screen-toggle-track">
                         <div class="w-4 h-4 bg-slate-400 rounded-full absolute left-0 transition-all duration-200" id="screen-toggle-knob"></div>
                     </div>
                 </button>
 
-                <button id="mute-btn" class="w-full flex items-center justify-between bg-slate-700 hover:bg-slate-600 px-4 py-2.5 rounded-lg text-sm transition-colors border border-slate-600">
-                    <span class="flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
-                        Mute Microphone
-                    </span>
-                    <div class="w-8 h-4 bg-slate-800 rounded-full relative" id="mute-toggle-track">
-                        <div class="w-4 h-4 bg-slate-400 rounded-full absolute left-0 transition-all duration-200" id="mute-toggle-knob"></div>
+                <!-- Annotation / Whiteboard Toggle & Controls -->
+                <div class="bg-slate-700/30 rounded-xl border border-slate-700 overflow-hidden transition-all">
+                    <button id="whiteboard-btn" class="w-full flex items-center justify-between hover:bg-slate-700/50 px-3 py-2.5 text-sm font-medium transition-colors">
+                        <span class="flex items-center gap-2 text-indigo-300">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            Draw & Annotate Overlay
+                        </span>
+                        <div class="w-8 h-4 bg-slate-800 rounded-full relative" id="wb-toggle-track">
+                            <div class="w-4 h-4 bg-slate-400 rounded-full absolute left-0 transition-all duration-200" id="wb-toggle-knob"></div>
+                        </div>
+                    </button>
+                    
+                    <div id="whiteboard-tools" class="hidden p-3 pt-0 border-t border-slate-700/50 bg-slate-800/50 space-y-3">
+                        <div class="mt-2 grid grid-cols-2 gap-2">
+                            <select id="wb-tool" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-2 py-1.5 text-xs focus:outline-none text-white">
+                                <option value="pen">Marker Pen</option>
+                                <option value="pencil">Sketch Pencil</option>
+                                <option value="highlighter">Highlighter</option>
+                                <option value="neon">Neon Glow</option>
+                            </select>
+                            <select id="wb-bg" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-2 py-1.5 text-xs focus:outline-none text-white">
+                                <option value="transparent">Transparent Bg</option>
+                                <option value="white">Solid Whiteboard</option>
+                                <option value="black">Solid Blackboard</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="color" id="wb-color" value="#ef4444" class="w-8 h-8 rounded cursor-pointer bg-transparent border-0 p-0">
+                            <input type="range" id="wb-size" min="1" max="60" value="8" class="flex-1">
+                            <button id="wb-eraser" class="p-1.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300" title="Eraser">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                            <button id="wb-clear" class="p-1.5 rounded bg-red-900/50 hover:bg-red-800 text-red-300 text-xs font-semibold px-2" title="Clear All">
+                                Clear
+                            </button>
+                        </div>
                     </div>
-                </button>
+                </div>
 
-                <button id="snapshot-btn" class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-900/20">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    Take Snapshot
-                </button>
-
-                <div class="grid grid-cols-2 gap-2 pt-2">
-                    <button id="mirror-btn" class="w-full flex flex-col items-center justify-center gap-1 bg-slate-700 hover:bg-slate-600 p-2 rounded-lg text-xs transition-colors border border-slate-600 text-slate-300">
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <button id="mirror-btn" class="flex flex-col items-center justify-center gap-1 bg-indigo-600 hover:bg-indigo-700 p-2 rounded-lg text-xs transition-colors border border-indigo-500 text-white">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
                         Mirror Video
                     </button>
-                    <button id="grid-btn" class="w-full flex flex-col items-center justify-center gap-1 bg-slate-700 hover:bg-slate-600 p-2 rounded-lg text-xs transition-colors border border-slate-600 text-slate-300">
+                    <button id="grid-btn" class="flex flex-col items-center justify-center gap-1 bg-slate-700 hover:bg-slate-600 p-2 rounded-lg text-xs transition-colors border border-slate-600 text-slate-300">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
                         Show Grid
                     </button>
-                    
-                    <button id="pip-btn" class="w-full col-span-2 flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs transition-colors border border-slate-600 text-slate-300">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 3H3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2zm-2 16H5V5h14v14zm-3-6h-4v4h4v-4z"></path></svg>
-                        Picture-in-Picture Mode
-                    </button>
-
-                    <button id="countdown-btn" class="w-full col-span-2 flex items-center justify-between bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs transition-colors border border-slate-600 text-slate-300">
+                    <button id="countdown-btn" class="col-span-2 flex items-center justify-between bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs transition-colors border border-slate-600 text-slate-300">
                         <span class="flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            3s Countdown
+                            3s Countdown Timer
                         </span>
-                        <div class="w-8 h-4 bg-indigo-500 rounded-full relative" id="countdown-toggle-track">
-                            <div class="w-4 h-4 bg-white rounded-full absolute left-0 translate-x-4 transition-all duration-200" id="countdown-toggle-knob"></div>
+                        <div class="w-8 h-4 bg-slate-800 rounded-full relative" id="countdown-toggle-track">
+                            <div class="w-4 h-4 bg-slate-400 rounded-full absolute left-0 transition-all duration-200" id="countdown-toggle-knob"></div>
                         </div>
                     </button>
+                    <button id="mute-btn" class="col-span-2 flex items-center justify-between bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs transition-colors border border-slate-600 text-slate-300">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                            Mute Microphone
+                        </span>
+                        <div class="w-8 h-4 bg-slate-800 rounded-full relative" id="mute-toggle-track">
+                            <div class="w-4 h-4 bg-slate-400 rounded-full absolute left-0 transition-all duration-200" id="mute-toggle-knob"></div>
+                        </div>
+                    </button>
+                    <button id="snapshot-btn" class="col-span-2 flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 px-3 py-2.5 rounded-lg text-xs font-medium transition-colors border border-slate-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
+                        Take Snapshot
+                    </button>
                 </div>
-
             </div>
-        </div>
-        
-        <!-- Recording Status Info -->
-        <div class="p-4 bg-slate-900/50 border-t border-slate-700 text-xs text-slate-400 text-center">
-            Files save dynamically to your chosen directory.
         </div>
     </aside>
 
@@ -196,7 +336,7 @@
                 <span id="timer-display" class="font-mono text-lg font-medium text-white tracking-wider">00:00</span>
             </div>
 
-            <div id="audio-meter-container" class="flex items-center gap-2 bg-black/60 backdrop-blur px-4 py-2 rounded-full border border-slate-700">
+            <div id="audio-meter-container" class="flex items-center gap-2 bg-black/60 backdrop-blur px-4 py-2 rounded-full border border-slate-700 ml-auto">
                 <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                 <div class="flex items-end gap-[2px] h-4" id="audio-bars">
                     <!-- Bars injected by JS -->
@@ -205,93 +345,98 @@
         </div>
 
         <!-- Video Preview Canvas -->
-        <div class="flex-1 w-full h-full p-4 md:p-8 flex items-center justify-center">
-            <div class="relative w-full max-w-5xl aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-black ring-1 ring-slate-800 bg-black group">
-                <!-- Hidden video element to capture raw camera feed -->
-                <video id="raw-video" autoplay playsinline muted class="hidden"></video>
-                <!-- Canvas to render video with effects -->
-                <canvas id="preview-canvas" class="w-full h-full object-cover"></canvas>
+        <div class="flex-1 w-full h-full p-4 md:p-8 flex items-center justify-center relative cursor-default" id="canvas-container">
+            <div class="relative w-full max-w-[1600px] aspect-video rounded-xl md:rounded-2xl overflow-hidden shadow-2xl shadow-black ring-1 ring-slate-800 bg-black group">
+                <!-- Hidden video elements -->
+                <video id="camera-video" autoplay playsinline muted class="hidden"></video>
+                <video id="screen-video" autoplay playsinline muted class="hidden"></video>
+                
+                <!-- Main render canvas -->
+                <canvas id="preview-canvas" class="w-full h-full object-cover touch-none"></canvas>
 
-                <div id="countdown-overlay" class="absolute inset-0 bg-black/60 flex items-center justify-center hidden z-20">
-                    <span id="countdown-number" class="text-9xl font-bold text-white drop-shadow-2xl">3</span>
+                <!-- Timer overlay -->
+                <div id="countdown-overlay" class="absolute inset-0 flex items-center justify-center hidden z-20 pointer-events-none">
+                    <span id="countdown-number" class="text-[15rem] font-bold text-white tracking-tighter" style="text-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 100px rgba(0,0,0,0.5);">3</span>
                 </div>
             </div>
         </div>
 
         <!-- Controls Bar -->
-        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-slate-800/90 backdrop-blur-md p-3 rounded-2xl shadow-2xl border border-slate-700 z-10">
+        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 md:gap-4 bg-slate-800/90 backdrop-blur-md p-3 rounded-2xl shadow-2xl border border-slate-700 z-10">
             
-            <button id="start-btn" class="group flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-medium transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-red-500/20">
+            <button id="start-btn" class="group flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-5 md:px-8 py-3 rounded-xl font-medium transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-red-500/20 whitespace-nowrap">
                 <div class="w-4 h-4 bg-white rounded-full group-hover:scale-110 transition-transform"></div>
                 Start Recording
             </button>
 
-            <button id="pause-btn" disabled class="hidden items-center gap-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-medium transition-all">
+            <button id="pause-btn" disabled class="hidden items-center gap-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 md:px-6 py-3 rounded-xl font-medium transition-all">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <span id="pause-text">Pause</span>
+                <span id="pause-text" class="hidden md:inline">Pause</span>
             </button>
 
-            <button id="stop-btn" disabled class="hidden items-center gap-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-medium transition-all">
+            <button id="stop-btn" disabled class="hidden items-center gap-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 md:px-6 py-3 rounded-xl font-medium transition-all">
                 <div class="w-4 h-4 bg-white rounded-sm"></div>
-                Stop
+                <span class="hidden md:inline">Stop</span>
             </button>
             
         </div>
     </main>
 
-    <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed bottom-24 right-8 flex flex-col gap-2 z-50 pointer-events-none"></div>
-
-    <!-- Message Box (Custom Alert) -->
-    <div id="message-box" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
-        <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl max-w-sm w-full shadow-2xl transform scale-95 transition-transform duration-300" id="message-content">
-            <h3 class="text-xl font-bold mb-2 text-white" id="msg-title">Alert</h3>
-            <p class="text-slate-300 mb-6" id="msg-body">Message</p>
-            <div class="flex justify-end">
-                <button id="msg-close" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg font-medium transition-colors">Okay</button>
-            </div>
+    <!-- Global Drag & Drop Overlay -->
+    <div id="drag-overlay" class="absolute inset-0 z-[100] bg-indigo-900/80 backdrop-blur-sm hidden items-center justify-center pointer-events-none transition-opacity duration-300 opacity-0">
+        <div class="bg-slate-800 border-2 border-indigo-500 border-dashed p-10 rounded-2xl shadow-2xl flex flex-col items-center">
+            <svg class="w-20 h-20 text-indigo-400 mb-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+            <h2 class="text-3xl font-bold text-white tracking-tight">Drop Media Here</h2>
+            <p class="text-indigo-200 mt-2 font-medium">Release to add PDFs or Images to your presentation queue</p>
         </div>
     </div>
 
-    <script>
-        // DOM Elements
-        const audioSelect = document.getElementById('audio-source');
-        const videoSelect = document.getElementById('video-source');
-        const effectSelect = document.getElementById('video-effect');
-        const rawVideo = document.getElementById('raw-video');
-        const canvas = document.getElementById('preview-canvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        
-        const startBtn = document.getElementById('start-btn');
-        const pauseBtn = document.getElementById('pause-btn');
-        const stopBtn = document.getElementById('stop-btn');
-        const snapshotBtn = document.getElementById('snapshot-btn');
-        const screenShareBtn = document.getElementById('screen-share-btn');
-        const muteBtn = document.getElementById('mute-btn');
-        
-        const recordingIndicator = document.getElementById('recording-indicator');
-        const timerDisplay = document.getElementById('timer-display');
-        const pauseText = document.getElementById('pause-text');
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-24 right-8 flex flex-col gap-2 z-50 pointer-events-none"></div>
 
-        // State variables
+    <script>
+        // --- State Management & Defaults ---
+        const DEFAULT_SETTINGS = {
+            audioSource: '', videoSource: '', effect: 'none',
+            resolution: '1920x1080', recFps: '60', cameraHz: 'auto', format: 'mp4', watermark: '',
+            isMirrored: true, showGrid: false, useCountdown: false,
+            camZoom: 1, camPanX: 0, camPanY: 0, micVolume: 100,
+            pipSize: 150, pipBorderWidth: 6, pipBorderColor: '#ffffff', wbTool: 'pen', wbBg: 'transparent',
+            pdfZoom: 1, pdfPanY: 0
+        };
+
+        let S = { ...DEFAULT_SETTINGS };
+
+        // Core logic variables
         let mediaRecorder;
         let recordedChunks = [];
-        let rawStream = null;
+        let cameraStream = null;
+        let screenStream = null;
         let audioStream = null;
+        
         let isScreenRecording = false;
         let isMuted = false;
-        let currentFilter = 'none';
         let animationFrameId;
         
-        let isMirrored = false;
-        let showGrid = false;
-        let useCountdown = true;
-        let audioContext, analyser, microphone, dataArray;
-        let audioMeterAnimationFrame;
-        const NUM_AUDIO_BARS = 10;
+        // PIP Dragging & Hover State
+        let pipX = 200, pipY = 200;
+        let isDraggingPip = false;
+        let isHoveringPip = false;
         
-        let masterGain = null;
-        let audioDest = null;
+        // Whiteboard State
+        let isWhiteboardActive = false;
+        let isDrawing = false;
+        let isErasing = false;
+        let lastX = 0, lastY = 0;
+        
+        // PDF / Media Presentation State
+        let mediaQueue = [];
+        let activeMediaIndex = -1;
+        let pdfDoc = null;
+        let pdfPageNum = 1;
+        let isPdfActive = false; // Still used as the global flag for Media Active
+        const pdfRenderCanvas = document.createElement('canvas');
+        const pdfRenderCtx = pdfRenderCanvas.getContext('2d');
 
         // Timer variables
         let timerInterval;
@@ -301,82 +446,182 @@
         // Configuration
         let CANVAS_WIDTH = 1920;
         let CANVAS_HEIGHT = 1080;
-        canvas.width = CANVAS_WIDTH;
-        canvas.height = CANVAS_HEIGHT;
 
-        // Custom Message Box
-        function showMessage(title, message) {
-            const box = document.getElementById('message-box');
-            const content = document.getElementById('message-content');
-            document.getElementById('msg-title').textContent = title;
-            document.getElementById('msg-body').textContent = message;
-            box.classList.remove('hidden');
-            // Trigger reflow
-            void box.offsetWidth;
-            box.classList.remove('opacity-0');
-            content.classList.remove('scale-95');
+        // DOM Elements
+        const audioSelect = document.getElementById('audio-source');
+        const videoSelect = document.getElementById('video-source');
+        const effectSelect = document.getElementById('video-effect');
+        const resSelect = document.getElementById('video-resolution');
+        const fpsSelect = document.getElementById('video-fps');
+        const hzSelect = document.getElementById('camera-hz');
+        const formatSelect = document.getElementById('video-format');
+        const watermarkInput = document.getElementById('watermark-input');
+        const wbToolSelect = document.getElementById('wb-tool');
+        const wbBgSelect = document.getElementById('wb-bg');
+        
+        const cameraVideo = document.getElementById('camera-video');
+        const screenVideo = document.getElementById('screen-video');
+        
+        const canvas = document.getElementById('preview-canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        // Setup hidden canvas for whiteboard drawing
+        const drawingCanvas = document.createElement('canvas');
+        const drawCtx = drawingCanvas.getContext('2d');
+        
+        // UI Toggles & Buttons
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const recordingIndicator = document.getElementById('recording-indicator');
+        const timerDisplay = document.getElementById('timer-display');
+
+        // Audio Visualizer Setup
+        let audioContext, analyser, microphone, dataArray;
+        let audioMeterAnimationFrame;
+        let masterGain = null;
+        let audioDest = null;
+        const NUM_AUDIO_BARS = 10;
+
+        // --- Local Storage Tying ---
+        function saveSettings() {
+            S.audioSource = audioSelect.value;
+            S.videoSource = videoSelect.value;
+            S.effect = effectSelect.value;
+            S.resolution = resSelect.value;
+            S.recFps = fpsSelect.value;
+            S.cameraHz = hzSelect.value;
+            S.format = formatSelect.value;
+            S.watermark = watermarkInput.value;
+            S.micVolume = document.getElementById('mic-volume').value;
+            S.camZoom = parseFloat(document.getElementById('cam-zoom').value);
+            S.camPanX = parseFloat(document.getElementById('cam-pan-x').value);
+            S.camPanY = parseFloat(document.getElementById('cam-pan-y').value);
+            
+            S.pipSize = parseInt(document.getElementById('pip-size').value);
+            S.pipBorderWidth = parseInt(document.getElementById('pip-border-width').value);
+            S.pipBorderColor = document.getElementById('pip-border-color').value;
+            S.wbTool = wbToolSelect.value;
+            S.wbBg = wbBgSelect.value;
+            S.pdfZoom = parseFloat(document.getElementById('pdf-zoom').value);
+            S.pdfPanY = parseFloat(document.getElementById('pdf-pan-y').value);
+            
+            localStorage.setItem('webStudioProSettings', JSON.stringify(S));
         }
 
-        document.getElementById('msg-close').addEventListener('click', () => {
-            const box = document.getElementById('message-box');
-            const content = document.getElementById('message-content');
-            box.classList.add('opacity-0');
-            content.classList.add('scale-95');
-            setTimeout(() => box.classList.add('hidden'), 300);
+        function loadSettings() {
+            try {
+                const saved = localStorage.getItem('webStudioProSettings');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    S = { ...DEFAULT_SETTINGS, ...parsed };
+                }
+            } catch(e) {}
+            
+            // Apply loaded settings to UI
+            effectSelect.value = S.effect;
+            resSelect.value = S.resolution;
+            fpsSelect.value = S.recFps;
+            hzSelect.value = S.cameraHz;
+            formatSelect.value = S.format;
+            watermarkInput.value = S.watermark;
+            document.getElementById('mic-volume').value = S.micVolume;
+            
+            document.getElementById('cam-zoom').value = S.camZoom;
+            document.getElementById('val-zoom').textContent = `${S.camZoom.toFixed(1)}x`;
+            document.getElementById('cam-pan-x').value = S.camPanX;
+            document.getElementById('val-panx').textContent = `${S.camPanX}%`;
+            document.getElementById('cam-pan-y').value = S.camPanY;
+            document.getElementById('val-pany').textContent = `${S.camPanY}%`;
+            
+            document.getElementById('pip-size').value = S.pipSize;
+            document.getElementById('val-pip-size').textContent = `${S.pipSize}px`;
+            document.getElementById('pip-border-width').value = S.pipBorderWidth;
+            document.getElementById('val-pip-border').textContent = `${S.pipBorderWidth}px`;
+            document.getElementById('pip-border-color').value = S.pipBorderColor;
+            wbToolSelect.value = S.wbTool;
+            wbBgSelect.value = S.wbBg;
+            
+            document.getElementById('pdf-zoom').value = S.pdfZoom;
+            document.getElementById('val-pdf-zoom').textContent = `${S.pdfZoom.toFixed(1)}x`;
+            document.getElementById('pdf-pan-y').value = S.pdfPanY;
+            document.getElementById('val-pdf-pany').textContent = `${S.pdfPanY}%`;
+
+            // Apply button toggles based on loaded settings
+            updateToggleUI(document.getElementById('countdown-toggle-knob'), document.getElementById('countdown-toggle-track'), S.useCountdown);
+            if(S.isMirrored) {
+                const mBtn = document.getElementById('mirror-btn');
+                mBtn.classList.replace('bg-slate-700', 'bg-indigo-600');
+                mBtn.classList.replace('border-slate-600', 'border-indigo-500');
+                mBtn.classList.replace('text-slate-300', 'text-white');
+            }
+            if(S.showGrid) {
+                const gBtn = document.getElementById('grid-btn');
+                gBtn.classList.replace('bg-slate-700', 'bg-indigo-600');
+                gBtn.classList.replace('border-slate-600', 'border-indigo-500');
+                gBtn.classList.replace('text-slate-300', 'text-white');
+            }
+        }
+
+        // Attach listeners to all inputs to trigger save
+        document.querySelectorAll('input, select').forEach(el => {
+            el.addEventListener('change', saveSettings);
+            if(el.type === 'range') el.addEventListener('input', saveSettings);
         });
 
-        // Toast Notification
+        // --- Toast Notification ---
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            const color = type === 'success' ? 'bg-emerald-500' : (type === 'error' ? 'bg-red-500' : 'bg-slate-700');
-            toast.className = `${color} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 transform translate-x-8 opacity-0 transition-all duration-300`;
+            const color = type === 'success' ? 'bg-emerald-600' : (type === 'error' ? 'bg-red-500' : 'bg-slate-800 border border-slate-700');
+            toast.className = `${color} text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transform translate-x-8 opacity-0 transition-all duration-300`;
             toast.innerHTML = `<span class="text-sm font-medium">${message}</span>`;
-            
             container.appendChild(toast);
-            
-            // Animate in
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-x-8', 'opacity-0');
-            });
-            
-            // Animate out
+            requestAnimationFrame(() => toast.classList.remove('translate-x-8', 'opacity-0'));
             setTimeout(() => {
                 toast.classList.add('translate-x-8', 'opacity-0');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
 
-        // Device Management
+        // Toggle UI helper
+        function updateToggleUI(knob, track, state) {
+            if (state) {
+                knob.classList.add('translate-x-4', 'bg-white');
+                knob.classList.remove('bg-slate-400');
+                track.classList.add('bg-indigo-500');
+                track.classList.remove('bg-slate-800');
+            } else {
+                knob.classList.remove('translate-x-4', 'bg-white');
+                knob.classList.add('bg-slate-400');
+                track.classList.remove('bg-indigo-500');
+                track.classList.add('bg-slate-800');
+            }
+        }
+
+        // --- Device Management ---
         async function getDevices() {
             try {
-                // Request initial generic permission to get device labels
                 const tempStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
                 tempStream.getTracks().forEach(track => track.stop());
 
                 const devices = await navigator.mediaDevices.enumerateDevices();
-                
-                audioSelect.innerHTML = '';
-                videoSelect.innerHTML = '';
+                audioSelect.innerHTML = ''; videoSelect.innerHTML = '';
 
                 devices.forEach(device => {
                     const option = document.createElement('option');
                     option.value = device.deviceId;
                     option.text = device.label || `${device.kind} (${device.deviceId.slice(0, 5)}...)`;
                     
-                    if (device.kind === 'audioinput') {
-                        audioSelect.appendChild(option);
-                    } else if (device.kind === 'videoinput') {
-                        videoSelect.appendChild(option);
-                    }
+                    if (device.kind === 'audioinput') audioSelect.appendChild(option);
+                    else if (device.kind === 'videoinput') videoSelect.appendChild(option);
                 });
 
-                if(audioSelect.options.length === 0) audioSelect.innerHTML = '<option>No microphone found</option>';
-                if(videoSelect.options.length === 0) videoSelect.innerHTML = '<option>No camera found</option>';
+                if(S.audioSource) audioSelect.value = S.audioSource;
+                if(S.videoSource) videoSelect.value = S.videoSource;
 
             } catch (error) {
-                console.error('Error fetching devices:', error);
-                showMessage('Permission Required', 'Please allow camera and microphone access to use the studio features.');
+                showToast('Camera/Mic permission needed.', 'error');
             }
         }
 
@@ -393,119 +638,92 @@
                 audioStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
                 setupAudioMeter(audioStream);
             } catch (err) {
-                console.error("Audio Error:", err);
                 showToast('Failed to access microphone.', 'error');
             }
         }
 
-        async function updateVideoStream() {
-            if (rawStream) rawStream.getTracks().forEach(t => t.stop());
+        async function updateCameraStream() {
+            if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
 
             const videoId = videoSelect.value;
-            const resSelect = document.getElementById('video-resolution');
-            
             let videoConstraints = videoId ? { deviceId: { exact: videoId } } : {};
             
-            if (resSelect && resSelect.value !== 'default') {
+            // Apply Hz specific frame rates directly to hardware to combat flicker
+            if (S.cameraHz !== 'auto') {
+                videoConstraints.frameRate = { ideal: parseInt(S.cameraHz) };
+            }
+            
+            if (resSelect.value !== 'default') {
                 const [w, h] = resSelect.value.split('x').map(Number);
                 videoConstraints.width = { ideal: w };
                 videoConstraints.height = { ideal: h };
-                
-                // Keep Canvas in sync with startup resolution
-                CANVAS_WIDTH = w;
-                CANVAS_HEIGHT = h;
-            } else {
-                CANVAS_WIDTH = 1920;
-                CANVAS_HEIGHT = 1080;
+                CANVAS_WIDTH = w; CANVAS_HEIGHT = h;
             }
             
-            canvas.width = CANVAS_WIDTH;
-            canvas.height = CANVAS_HEIGHT;
-
-            if (Object.keys(videoConstraints).length === 0) {
-                videoConstraints = true;
-            }
+            resizeCanvases();
 
             try {
-                if (isScreenRecording) {
-                    rawStream = await navigator.mediaDevices.getDisplayMedia({ 
-                        video: { cursor: "always" } 
-                    });
-                    
-                    // Listen for built-in browser "Stop Sharing" button
-                    rawStream.getVideoTracks()[0].onended = () => {
-                        isScreenRecording = false;
-                        updateToggleUI(document.getElementById('screen-toggle-knob'), document.getElementById('screen-toggle-track'), false);
-                        updateVideoStream(); // Revert back to camera
-                    };
-                } else {
-                    rawStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
-                }
-
-                rawVideo.srcObject = rawStream;
-                rawVideo.play();
-                
-                if (!animationFrameId) {
-                    renderCanvas();
-                }
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
+                cameraVideo.srcObject = cameraStream;
+                cameraVideo.play();
+                if (!animationFrameId) renderCanvas();
             } catch (err) {
-                if (isScreenRecording) {
-                    // Reset screen recording state
-                    isScreenRecording = false;
-                    const knob = document.getElementById('screen-toggle-knob');
-                    const track = document.getElementById('screen-toggle-track');
-                    if (knob && track) updateToggleUI(knob, track, false);
-                    
-                    if (err.name === 'NotAllowedError' || (err.message && err.message.toLowerCase().includes('permissions policy'))) {
-                        showMessage('Screen Share Blocked', 'Screen sharing is restricted in this preview environment. Save this file and open it locally to use this feature.');
-                    } else {
-                        showToast('Screen sharing canceled or denied.', 'error');
-                    }
-                    
-                    // Automatically fallback to standard camera
-                    setTimeout(() => updateVideoStream(), 100);
-                } else {
-                    console.error("Camera Error:", err);
-                    showMessage('Device Error', 'Failed to access camera. Please ensure permissions are granted in your browser settings.');
-                }
+                showToast('Failed to access camera.', 'error');
             }
         }
 
-        async function updateResolution() {
-            if (!rawStream || isScreenRecording) return;
-            const resSelect = document.getElementById('video-resolution');
-            const videoTrack = rawStream.getVideoTracks()[0];
-            
-            if (videoTrack && resSelect) {
-                let constraints = {};
-                if (resSelect.value !== 'default') {
-                    const [w, h] = resSelect.value.split('x').map(Number);
-                    constraints = { width: { ideal: w }, height: { ideal: h } };
-                    
-                    CANVAS_WIDTH = w;
-                    CANVAS_HEIGHT = h;
-                } else {
-                    CANVAS_WIDTH = 1920;
-                    CANVAS_HEIGHT = 1080;
-                }
-                
-                canvas.width = CANVAS_WIDTH;
-                canvas.height = CANVAS_HEIGHT;
-                
-                try {
-                    // Dynamically apply quality change without restarting the stream!
-                    await videoTrack.applyConstraints(constraints);
-                    showToast('Quality updated', 'success');
-                } catch (err) {
-                    console.error("Failed to apply constraints, restarting stream...", err);
-                    updateVideoStream(); // Fallback if browser doesn't support live constraints
-                }
+        async function toggleScreenShare() {
+            if (isScreenRecording) {
+                if(screenStream) screenStream.getTracks().forEach(t => t.stop());
+                isScreenRecording = false;
+                updateToggleUI(document.getElementById('screen-toggle-knob'), document.getElementById('screen-toggle-track'), false);
+                return;
             }
+
+            try {
+                const fps = parseInt(fpsSelect.value) || 60;
+                screenStream = await navigator.mediaDevices.getDisplayMedia({ 
+                    video: { cursor: "always", frameRate: { ideal: fps } },
+                    audio: false
+                });
+                
+                screenVideo.srcObject = screenStream;
+                screenVideo.play();
+                isScreenRecording = true;
+                updateToggleUI(document.getElementById('screen-toggle-knob'), document.getElementById('screen-toggle-track'), true);
+                
+                // Position PIP in bottom right by default
+                pipX = CANVAS_WIDTH - S.pipSize - 40;
+                pipY = CANVAS_HEIGHT - S.pipSize - 40;
+
+                screenStream.getVideoTracks()[0].onended = () => {
+                    isScreenRecording = false;
+                    updateToggleUI(document.getElementById('screen-toggle-knob'), document.getElementById('screen-toggle-track'), false);
+                };
+            } catch (err) {
+                showToast('Screen sharing canceled.', 'error');
+            }
+        }
+
+        function resizeCanvases() {
+            canvas.width = CANVAS_WIDTH;
+            canvas.height = CANVAS_HEIGHT;
+            
+            // Re-create drawing canvas content smoothly without glitches
+            const temp = document.createElement('canvas');
+            temp.width = drawingCanvas.width || CANVAS_WIDTH; 
+            temp.height = drawingCanvas.height || CANVAS_HEIGHT;
+            if(drawingCanvas.width) temp.getContext('2d').drawImage(drawingCanvas, 0, 0);
+            
+            drawingCanvas.width = CANVAS_WIDTH;
+            drawingCanvas.height = CANVAS_HEIGHT;
+            drawCtx.lineCap = 'round';
+            drawCtx.lineJoin = 'round';
+            drawCtx.drawImage(temp, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         }
 
         function setupAudioMeter(stream) {
             if (audioContext) audioContext.close();
-            
             const barsContainer = document.getElementById('audio-bars');
             barsContainer.innerHTML = '';
             for(let i=0; i<NUM_AUDIO_BARS; i++) {
@@ -519,161 +737,591 @@
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
                 microphone = audioContext.createMediaStreamSource(stream);
-                
-                // Initialize Master Gain for Volume Control slider
                 masterGain = audioContext.createGain();
-                const volControl = document.getElementById('mic-volume');
-                if (volControl) {
-                    masterGain.gain.value = volControl.value / 100;
-                }
-                
-                // Initialize MediaStreamDestination to route modified audio back to the MediaRecorder
+                masterGain.gain.value = S.micVolume / 100;
                 audioDest = audioContext.createMediaStreamDestination();
                 
-                // Route: Microphone -> Gain Node -> Analyser (Visuals) AND Destination (Recording)
                 microphone.connect(masterGain);
                 masterGain.connect(analyser);
                 masterGain.connect(audioDest);
 
                 analyser.fftSize = 256;
-                const bufferLength = analyser.frequencyBinCount;
-                dataArray = new Uint8Array(bufferLength);
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
                 
                 function drawAudioMeter() {
                     if(!audioContext || isMuted) {
-                        const bars = document.getElementById('audio-bars').children;
-                        for(let i=0; i<bars.length; i++) bars[i].style.height = '2px';
+                        Array.from(barsContainer.children).forEach(b => b.style.height = '2px');
                     } else {
                         analyser.getByteFrequencyData(dataArray);
-                        const bars = document.getElementById('audio-bars').children;
-                        const step = Math.floor(bufferLength / NUM_AUDIO_BARS);
-                        
-                        for (let i = 0; i < NUM_AUDIO_BARS; i++) {
+                        const step = Math.floor(analyser.frequencyBinCount / NUM_AUDIO_BARS);
+                        Array.from(barsContainer.children).forEach((bar, i) => {
                             let sum = 0;
-                            for (let j = 0; j < step; j++) {
-                                sum += dataArray[(i * step) + j];
-                            }
-                            const average = sum / step;
-                            const height = Math.max(2, (average / 255) * 16);
-                            
-                            if (average > 200) {
-                                bars[i].className = 'w-1 bg-red-500 rounded-t-sm transition-all duration-75';
-                            } else if (average > 150) {
-                                bars[i].className = 'w-1 bg-yellow-400 rounded-t-sm transition-all duration-75';
-                            } else {
-                                bars[i].className = 'w-1 bg-indigo-400 rounded-t-sm transition-all duration-75';
-                            }
-                            
-                            bars[i].style.height = `${height}px`;
-                        }
+                            for (let j = 0; j < step; j++) sum += dataArray[(i * step) + j];
+                            const avg = sum / step;
+                            const h = Math.max(2, (avg / 255) * 16);
+                            bar.className = `w-1 ${avg > 200 ? 'bg-red-500' : (avg > 150 ? 'bg-yellow-400' : 'bg-indigo-400')} rounded-t-sm transition-all duration-75`;
+                            bar.style.height = `${h}px`;
+                        });
                     }
                     audioMeterAnimationFrame = requestAnimationFrame(drawAudioMeter);
                 }
-                
-                if (audioMeterAnimationFrame) cancelAnimationFrame(audioMeterAnimationFrame);
                 drawAudioMeter();
-            } catch(e) {
-                console.warn("Audio Context setup pending user interaction.");
+            } catch(e) {}
+        }
+
+        // --- PDF / Media Queue & Drag-and-Drop Logic ---
+        function updateMediaListUI() {
+            const container = document.getElementById('media-list-container');
+            container.innerHTML = '';
+            mediaQueue.forEach((item, index) => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left truncate text-[11px] px-2 py-1.5 rounded-md transition-colors ${index === activeMediaIndex ? 'bg-indigo-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600'}`;
+                const icon = item.type === 'pdf' ? '📄' : '🖼️';
+                btn.innerHTML = `<span class="opacity-60 mr-1">${icon}</span> ${item.name}`;
+                btn.onclick = () => loadMedia(index);
+                container.appendChild(btn);
+            });
+        }
+
+        function handleMediaUpload(files) {
+            let added = false;
+            Array.from(files).forEach(file => {
+                if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
+                    mediaQueue.push({ file: file, type: file.type.startsWith('image/') ? 'image' : 'pdf', name: file.name });
+                    added = true;
+                }
+            });
+            if (added) {
+                updateMediaListUI();
+                // Auto load if it's the first item added or nothing is currently active
+                if (!isPdfActive || mediaQueue.length === 1) {
+                    loadMedia(mediaQueue.length - 1);
+                }
+                showToast('Media added to queue.', 'success');
+            } else {
+                showToast('Only PDF and Image files are supported.', 'error');
             }
         }
 
-        // Canvas Rendering Loop
-        function renderCanvas() {
-            if (rawVideo.readyState >= 2) {
-                // Determine crop to maintain aspect ratio
-                const videoAspect = rawVideo.videoWidth / rawVideo.videoHeight;
-                const canvasAspect = CANVAS_WIDTH / CANVAS_HEIGHT;
-                
-                let drawWidth, drawHeight, offsetX, offsetY;
+        function loadMedia(index) {
+            if(index < 0 || index >= mediaQueue.length) return;
+            activeMediaIndex = index;
+            const item = mediaQueue[index];
+            isPdfActive = true; 
+            
+            document.getElementById('pdf-controls').classList.remove('hidden');
+            document.getElementById('pdf-controls').classList.add('flex');
+            document.getElementById('pdf-upload-btn').classList.add('hidden');
+            
+            updateMediaListUI(); // highlight current active
 
-                if (videoAspect > canvasAspect) {
-                    drawHeight = CANVAS_HEIGHT;
-                    drawWidth = drawHeight * videoAspect;
-                    offsetX = (CANVAS_WIDTH - drawWidth) / 2;
-                    offsetY = 0;
-                } else {
-                    drawWidth = CANVAS_WIDTH;
-                    drawHeight = drawWidth / videoAspect;
-                    offsetX = 0;
-                    offsetY = (CANVAS_HEIGHT - drawHeight) / 2;
-                }
-
-                // Apply selected CSS filter directly to canvas context
-                ctx.filter = currentFilter;
+            if (item.type === 'pdf') {
+                document.getElementById('pdf-page-controls').classList.remove('hidden');
+                document.getElementById('pdf-page-controls').classList.add('flex');
                 
-                // Clear and draw
-                ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                const reader = new FileReader();
+                reader.onload = function() {
+                    const typedarray = new Uint8Array(this.result);
+                    pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+                        pdfDoc = pdf;
+                        pdfPageNum = 1;
+                        document.getElementById('pdf-page-count').textContent = pdf.numPages;
+                        renderPdfPage(pdfPageNum);
+                    });
+                };
+                reader.readAsArrayBuffer(item.file);
+            } else {
+                // Render Image
+                document.getElementById('pdf-page-controls').classList.add('hidden');
+                document.getElementById('pdf-page-controls').classList.remove('flex');
+                pdfDoc = null; // Clear pdfDoc
                 
-                ctx.save();
-                if (isMirrored && !isScreenRecording) {
-                    ctx.translate(CANVAS_WIDTH, 0);
-                    ctx.scale(-1, 1);
-                }
-                
-                ctx.drawImage(rawVideo, offsetX, offsetY, drawWidth, drawHeight);
-                ctx.restore(); // Restore before drawing non-mirrored elements (text, grid)
-                ctx.filter = 'none'; // Reset filter for overlays
-
-                // Draw Watermark
-                const watermarkText = document.getElementById('watermark-input')?.value;
-                if (watermarkText) {
-                    ctx.font = 'bold 36px Inter, sans-serif';
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-                    ctx.shadowBlur = 6;
-                    ctx.shadowOffsetX = 2;
-                    ctx.shadowOffsetY = 2;
-                    ctx.fillText(watermarkText, 40, CANVAS_HEIGHT - 40);
-                    ctx.shadowColor = 'transparent'; // reset
-                }
-
-                // Draw Rule of Thirds Grid
-                if (showGrid) {
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    // Vertical lines
-                    ctx.moveTo(CANVAS_WIDTH / 3, 0); ctx.lineTo(CANVAS_WIDTH / 3, CANVAS_HEIGHT);
-                    ctx.moveTo((CANVAS_WIDTH / 3) * 2, 0); ctx.lineTo((CANVAS_WIDTH / 3) * 2, CANVAS_HEIGHT);
-                    // Horizontal lines
-                    ctx.moveTo(0, CANVAS_HEIGHT / 3); ctx.lineTo(CANVAS_WIDTH, CANVAS_HEIGHT / 3);
-                    ctx.moveTo(0, (CANVAS_HEIGHT / 3) * 2); ctx.lineTo(CANVAS_WIDTH, (CANVAS_HEIGHT / 3) * 2);
-                    ctx.stroke();
-                }
+                const url = URL.createObjectURL(item.file);
+                const img = new Image();
+                img.onload = () => {
+                    pdfRenderCanvas.width = img.width;
+                    pdfRenderCanvas.height = img.height;
+                    pdfRenderCtx.clearRect(0, 0, img.width, img.height);
+                    pdfRenderCtx.drawImage(img, 0, 0);
+                    URL.revokeObjectURL(url); // Free memory
+                };
+                img.src = url;
             }
             
+            // Auto trigger PIP if it's not already running
+            if(!isScreenRecording && !isWhiteboardActive) {
+                pipX = CANVAS_WIDTH - S.pipSize - 40;
+                pipY = CANVAS_HEIGHT - S.pipSize - 40;
+            }
+        }
+
+        // Global Drag and Drop event listeners
+        let dragCounter = 0; // Fixes flickering issues with inner elements
+        window.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            if (e.dataTransfer.types && e.dataTransfer.types.includes("Files")) {
+                dragCounter++;
+                const overlay = document.getElementById('drag-overlay');
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+            }
+        });
+        window.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dragCounter--;
+            if (dragCounter === 0) {
+                const overlay = document.getElementById('drag-overlay');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    if(dragCounter === 0) {
+                        overlay.classList.add('hidden');
+                        overlay.classList.remove('flex');
+                    }
+                }, 300);
+            }
+        });
+        window.addEventListener('dragover', (e) => { e.preventDefault(); });
+        window.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dragCounter = 0;
+            const overlay = document.getElementById('drag-overlay');
+            overlay.classList.add('opacity-0');
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+            }, 300);
+
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                handleMediaUpload(e.dataTransfer.files);
+            }
+        });
+
+        // UI button event listeners for media
+        document.getElementById('pdf-upload-btn').addEventListener('click', () => { document.getElementById('pdf-upload').click(); });
+        document.getElementById('pdf-upload-btn-secondary').addEventListener('click', () => { document.getElementById('pdf-upload').click(); });
+        
+        document.getElementById('pdf-upload').addEventListener('change', (e) => {
+            if(e.target.files.length > 0) handleMediaUpload(e.target.files);
+            e.target.value = ''; // Reset input to allow adding same file again if wanted
+        });
+
+        function renderPdfPage(num) {
+            if(!pdfDoc) return;
+            pdfDoc.getPage(num).then(page => {
+                const viewport = page.getViewport({ scale: 3.0 }); 
+                pdfRenderCanvas.width = viewport.width;
+                pdfRenderCanvas.height = viewport.height;
+                const renderContext = { canvasContext: pdfRenderCtx, viewport: viewport };
+                page.render(renderContext);
+                document.getElementById('pdf-page-num').textContent = num;
+            });
+        }
+
+        document.getElementById('pdf-prev').addEventListener('click', () => {
+            if(pdfPageNum <= 1 || !pdfDoc) return;
+            pdfPageNum--;
+            renderPdfPage(pdfPageNum);
+        });
+
+        document.getElementById('pdf-next').addEventListener('click', () => {
+            if(!pdfDoc || pdfPageNum >= pdfDoc.numPages) return;
+            pdfPageNum++;
+            renderPdfPage(pdfPageNum);
+        });
+
+        document.getElementById('pdf-close-btn').addEventListener('click', () => {
+            isPdfActive = false;
+            pdfDoc = null;
+            mediaQueue = [];
+            activeMediaIndex = -1;
+            document.getElementById('pdf-controls').classList.add('hidden');
+            document.getElementById('pdf-controls').classList.remove('flex');
+            document.getElementById('pdf-upload-btn').classList.remove('hidden');
+            document.getElementById('media-list-container').innerHTML = '';
+        });
+        
+        document.getElementById('pdf-zoom').addEventListener('input', (e) => { document.getElementById('val-pdf-zoom').textContent = `${parseFloat(e.target.value).toFixed(1)}x`; });
+        document.getElementById('pdf-pan-y').addEventListener('input', (e) => { document.getElementById('val-pdf-pany').textContent = `${e.target.value}%`; });
+
+
+        // --- Canvas Drawing & Render Loop ---
+        function renderCanvas() {
+            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            ctx.shadowColor = 'transparent'; // Reset default shadow
+            
+            // Activate PIP if Screen Recording OR Whiteboard OR PDF is active
+            const usePip = isScreenRecording || isWhiteboardActive || isPdfActive;
+
+            // 1. Render Background Layer (Screen Share OR PDF OR Board OR Full Camera)
+            if (isScreenRecording && screenVideo.readyState >= 2) {
+                // Screen share background dominates
+                const sRatio = screenVideo.videoWidth / screenVideo.videoHeight;
+                const cRatio = CANVAS_WIDTH / CANVAS_HEIGHT;
+                let sw = CANVAS_WIDTH, sh = CANVAS_HEIGHT, sx = 0, sy = 0;
+                if (sRatio > cRatio) {
+                    sh = sw / sRatio; sy = (CANVAS_HEIGHT - sh) / 2;
+                } else {
+                    sw = sh * sRatio; sx = (CANVAS_WIDTH - sw) / 2;
+                }
+                ctx.drawImage(screenVideo, sx, sy, sw, sh);
+                
+                // Solid board cover override
+                if (isWhiteboardActive && S.wbBg !== 'transparent') {
+                    ctx.fillStyle = S.wbBg === 'black' ? 'rgba(15, 23, 42, 0.98)' : 'rgba(248, 250, 252, 0.98)';
+                    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                }
+
+            } else if (isPdfActive && pdfRenderCanvas.width > 0) {
+                // Draw Media Presentation Background (PDF or Image)
+                
+                // Draw app background behind Media
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                
+                // Calculate Fit-to-screen sizing
+                const pRatio = pdfRenderCanvas.width / pdfRenderCanvas.height;
+                const cRatio = CANVAS_WIDTH / CANVAS_HEIGHT;
+                let pw = CANVAS_WIDTH, ph = CANVAS_HEIGHT, px = 0, py = 0;
+                if (pRatio > cRatio) { 
+                    ph = pw / pRatio; py = (CANVAS_HEIGHT - ph) / 2;
+                } else { 
+                    pw = ph * pRatio; px = (CANVAS_WIDTH - pw) / 2;
+                }
+                
+                // Apply Zoom & Scroll Y Offsets
+                const zoom = S.pdfZoom || 1;
+                const pany = S.pdfPanY || 0; 
+                
+                const drawW = pw * zoom;
+                const drawH = ph * zoom;
+                const drawX = px - (drawW - pw)/2;
+                const drawY = py - (drawH - ph)/2 + (pany / 100) * (drawH / 2);
+                
+                ctx.drawImage(pdfRenderCanvas, drawX, drawY, drawW, drawH);
+                
+                // Optional overlay if whiteboard is specifically set to cover Media
+                if (isWhiteboardActive && S.wbBg !== 'transparent') {
+                    ctx.fillStyle = S.wbBg === 'black' ? 'rgba(15, 23, 42, 0.98)' : 'rgba(248, 250, 252, 0.98)';
+                    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                }
+
+            } else if (isWhiteboardActive) {
+                // No Screen share or PDF, drawing is active. Evaluate Background choice.
+                if (S.wbBg === 'white') {
+                    ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                    ctx.fillStyle = '#cbd5e1';
+                    for(let i=0; i<CANVAS_WIDTH; i+=40) { for(let j=0; j<CANVAS_HEIGHT; j+=40) { ctx.beginPath(); ctx.arc(i, j, 2, 0, Math.PI*2); ctx.fill(); } }
+                } else if (S.wbBg === 'black') {
+                    ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                    ctx.fillStyle = '#334155';
+                    for(let i=0; i<CANVAS_WIDTH; i+=40) { for(let j=0; j<CANVAS_HEIGHT; j+=40) { ctx.beginPath(); ctx.arc(i, j, 1.5, 0, Math.PI*2); ctx.fill(); } }
+                } else {
+                    // Transparent Bg selected, no presentation -> Just render black background
+                    ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                }
+            } else if (!usePip && cameraVideo.readyState >= 2) {
+                // Full Screen Camera mode (No Screen Share, No PDF, No Whiteboard active)
+                ctx.save();
+                ctx.translate(CANVAS_WIDTH/2, CANVAS_HEIGHT/2);
+                if (S.isMirrored) ctx.scale(-1, 1);
+                ctx.filter = S.effect !== 'none' ? S.effect : 'none';
+
+                const vRatio = cameraVideo.videoWidth / cameraVideo.videoHeight;
+                const cRatio = CANVAS_WIDTH / CANVAS_HEIGHT;
+                let drawW, drawH;
+                if (vRatio > cRatio) {
+                    drawH = CANVAS_HEIGHT * S.camZoom; drawW = drawH * vRatio;
+                } else {
+                    drawW = CANVAS_WIDTH * S.camZoom; drawH = drawW / vRatio;
+                }
+
+                const panXOffset = (S.camPanX / 100) * (drawW / 2);
+                const panYOffset = (S.camPanY / 100) * (drawH / 2);
+
+                ctx.drawImage(cameraVideo, -drawW/2 - panXOffset, -drawH/2 + panYOffset, drawW, drawH);
+                ctx.restore();
+            }
+
+            // 2. Render Whiteboard Drawings Layer (Always overlays background & PDF perfectly!)
+            if (isWhiteboardActive || isScreenRecording || isPdfActive) {
+                ctx.drawImage(drawingCanvas, 0, 0);
+            }
+
+            // 3. Render Picture-in-Picture Camera (if active)
+            if (usePip && cameraVideo.readyState >= 2) {
+                ctx.save();
+                
+                // Draw drop shadow for PIP circle
+                ctx.beginPath();
+                ctx.arc(pipX, pipY, S.pipSize, 0, Math.PI * 2);
+                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                ctx.shadowBlur = 25;
+                ctx.shadowOffsetY = 15;
+                ctx.fillStyle = '#000';
+                ctx.fill();
+                ctx.shadowColor = 'transparent'; // Reset to prevent affecting other operations
+
+                // Clip to the PIP circle
+                ctx.clip(); 
+                
+                // Position Camera inside PIP
+                ctx.translate(pipX, pipY);
+                if (S.isMirrored) ctx.scale(-1, 1);
+                ctx.filter = S.effect !== 'none' ? S.effect : 'none';
+
+                const vRatio = cameraVideo.videoWidth / cameraVideo.videoHeight;
+                let drawW, drawH;
+                if (vRatio > 1) {
+                    drawH = S.pipSize * 2 * S.camZoom; drawW = drawH * vRatio;
+                } else {
+                    drawW = S.pipSize * 2 * S.camZoom; drawH = drawW / vRatio;
+                }
+
+                const panXOffset = (S.camPanX / 100) * (drawW / 2);
+                const panYOffset = (S.camPanY / 100) * (drawH / 2);
+
+                ctx.drawImage(cameraVideo, -drawW/2 - panXOffset, -drawH/2 + panYOffset, drawW, drawH);
+                ctx.restore();
+
+                // Draw Customizable Border
+                if (S.pipBorderWidth > 0) {
+                    ctx.beginPath();
+                    ctx.arc(pipX, pipY, S.pipSize, 0, Math.PI * 2);
+                    ctx.lineWidth = S.pipBorderWidth;
+                    ctx.strokeStyle = S.pipBorderColor;
+                    ctx.stroke();
+                }
+
+                // Draw Visual Overlay Cue when Hovering for Resize
+                if (isHoveringPip && !isDraggingPip && !isDrawing) {
+                    ctx.beginPath();
+                    ctx.arc(pipX, pipY, S.pipSize, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '600 22px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                    ctx.shadowBlur = 4;
+                    ctx.fillText('↕ Scroll to Resize', pipX, pipY);
+                    ctx.shadowColor = 'transparent';
+                }
+            }
+
+            // 4. Global Overlays (Grid & Watermark)
+            if (S.showGrid) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(CANVAS_WIDTH / 3, 0); ctx.lineTo(CANVAS_WIDTH / 3, CANVAS_HEIGHT);
+                ctx.moveTo((CANVAS_WIDTH / 3) * 2, 0); ctx.lineTo((CANVAS_WIDTH / 3) * 2, CANVAS_HEIGHT);
+                ctx.moveTo(0, CANVAS_HEIGHT / 3); ctx.lineTo(CANVAS_WIDTH, CANVAS_HEIGHT / 3);
+                ctx.moveTo(0, (CANVAS_HEIGHT / 3) * 2); ctx.lineTo(CANVAS_WIDTH, (CANVAS_HEIGHT / 3) * 2);
+                ctx.stroke();
+            }
+
+            if (S.watermark) {
+                ctx.font = 'bold 36px Inter, sans-serif';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                ctx.shadowBlur = 8;
+                ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
+                ctx.fillText(S.watermark, 40, CANVAS_HEIGHT - 40);
+                ctx.shadowColor = 'transparent';
+            }
+
             animationFrameId = requestAnimationFrame(renderCanvas);
         }
 
-        // Timer Logic
+        // --- Mouse Interactions & Wheel Support ---
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (evt.clientX - rect.left) * (canvas.width / rect.width),
+                y: (evt.clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function setupBrush() {
+            const tool = S.wbTool;
+            drawCtx.lineWidth = document.getElementById('wb-size').value;
+            const baseColor = document.getElementById('wb-color').value;
+            
+            // Clean up states
+            drawCtx.shadowBlur = 0;
+            drawCtx.shadowColor = 'transparent';
+            
+            if (isErasing) {
+                drawCtx.globalCompositeOperation = 'destination-out';
+                drawCtx.globalAlpha = 1.0;
+                drawCtx.strokeStyle = 'rgba(0,0,0,1)';
+                drawCtx.lineCap = 'round';
+                drawCtx.lineJoin = 'round';
+            } else {
+                drawCtx.globalCompositeOperation = tool === 'highlighter' ? 'multiply' : 'source-over';
+                drawCtx.lineCap = tool === 'highlighter' ? 'square' : 'round';
+                drawCtx.lineJoin = 'round';
+                
+                if (tool === 'pencil') {
+                    drawCtx.strokeStyle = baseColor;
+                    drawCtx.globalAlpha = 0.5;
+                    drawCtx.lineWidth = Math.max(1, drawCtx.lineWidth * 0.4); 
+                } else if (tool === 'highlighter') {
+                    drawCtx.strokeStyle = baseColor;
+                    drawCtx.globalAlpha = 0.4;
+                    drawCtx.lineWidth = drawCtx.lineWidth * 2.5; 
+                } else if (tool === 'neon') {
+                    drawCtx.globalAlpha = 1.0;
+                    drawCtx.strokeStyle = '#ffffff'; // White core
+                    drawCtx.shadowBlur = parseInt(drawCtx.lineWidth) * 2;
+                    drawCtx.shadowColor = baseColor;
+                } else {
+                    // Standard Marker Pen
+                    drawCtx.strokeStyle = baseColor;
+                    drawCtx.globalAlpha = 1.0; 
+                }
+            }
+        }
+
+        // Central Handle for Scrolling (PIP Resize, Media Zoom, Media Pan)
+        canvas.addEventListener('wheel', (e) => {
+            const usePip = isScreenRecording || isWhiteboardActive || isPdfActive;
+            
+            // 1. Hovering over PIP? Resize it.
+            if (usePip && isHoveringPip && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault(); 
+                const delta = Math.sign(e.deltaY) * -10; 
+                S.pipSize = Math.max(80, Math.min(400, S.pipSize + delta));
+                
+                // Boundaries check
+                pipX = Math.max(S.pipSize, Math.min(pipX, CANVAS_WIDTH - S.pipSize));
+                pipY = Math.max(S.pipSize, Math.min(pipY, CANVAS_HEIGHT - S.pipSize));
+                
+                // Sync UI
+                document.getElementById('pip-size').value = S.pipSize;
+                document.getElementById('val-pip-size').textContent = `${S.pipSize}px`;
+                saveSettings();
+                return;
+            }
+
+            // 2. Adjusting Presentation Media (PDF/Image) Zoom & Pan
+            if (isPdfActive) {
+                e.preventDefault();
+                
+                if (e.ctrlKey || e.metaKey) {
+                    // Zoom using Ctrl/Cmd + Scroll
+                    const zoomDelta = Math.sign(e.deltaY) * -0.1;
+                    S.pdfZoom = Math.max(0.5, Math.min(4.0, S.pdfZoom + zoomDelta));
+                    document.getElementById('pdf-zoom').value = S.pdfZoom;
+                    document.getElementById('val-pdf-zoom').textContent = `${S.pdfZoom.toFixed(1)}x`;
+                } else {
+                    // Panning Y using standard scroll
+                    const scrollDelta = Math.sign(e.deltaY) * -5;
+                    S.pdfPanY = Math.max(-100, Math.min(100, S.pdfPanY + scrollDelta));
+                    document.getElementById('pdf-pan-y').value = S.pdfPanY;
+                    document.getElementById('val-pdf-pany').textContent = `${S.pdfPanY}%`;
+                }
+                saveSettings();
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('mousedown', (e) => {
+            const pos = getMousePos(e);
+            const usePip = isScreenRecording || isWhiteboardActive || isPdfActive;
+            
+            // 1. Check PIP Dragging Hitbox
+            if (usePip) {
+                const dist = Math.hypot(pos.x - pipX, pos.y - pipY);
+                if (dist <= S.pipSize) {
+                    isDraggingPip = true;
+                    canvas.style.cursor = 'grabbing';
+                    return; // Prevent drawing 
+                }
+            }
+
+            // 2. Handle Drawing
+            if (isWhiteboardActive) {
+                isDrawing = true;
+                lastX = pos.x; lastY = pos.y;
+                setupBrush();
+                
+                drawCtx.beginPath();
+                drawCtx.moveTo(lastX, lastY);
+                drawCtx.lineTo(lastX, lastY); 
+                drawCtx.stroke();
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const pos = getMousePos(e);
+            const usePip = isScreenRecording || isWhiteboardActive || isPdfActive;
+            
+            isHoveringPip = false;
+
+            // Hover styling & detecting PIP bounds
+            if (usePip && !isDraggingPip && !isDrawing) {
+                const dist = Math.hypot(pos.x - pipX, pos.y - pipY);
+                if (dist <= S.pipSize) {
+                    isHoveringPip = true;
+                    canvas.style.cursor = 'grab';
+                } else {
+                    canvas.style.cursor = isWhiteboardActive ? 'crosshair' : 'default';
+                }
+            } else if (isWhiteboardActive && !isDraggingPip) {
+                 canvas.style.cursor = 'crosshair';
+            }
+
+            // Drag PIP Bubble
+            if (isDraggingPip) {
+                pipX = Math.max(S.pipSize, Math.min(pos.x, CANVAS_WIDTH - S.pipSize));
+                pipY = Math.max(S.pipSize, Math.min(pos.y, CANVAS_HEIGHT - S.pipSize));
+                return;
+            }
+
+            // Draw Stroke
+            if (isDrawing && isWhiteboardActive) {
+                setupBrush();
+                drawCtx.beginPath();
+                drawCtx.moveTo(lastX, lastY);
+                drawCtx.lineTo(pos.x, pos.y);
+                drawCtx.stroke();
+                
+                lastX = pos.x; lastY = pos.y;
+            }
+        });
+
+        // Ensure variables reset when mouse leaves canvas
+        canvas.addEventListener('mouseleave', () => {
+             isHoveringPip = false;
+             isDraggingPip = false;
+             isDrawing = false;
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDraggingPip = false;
+            isDrawing = false;
+            canvas.style.cursor = isWhiteboardActive ? 'crosshair' : 'default';
+        });
+
+        // Touch support
+        canvas.addEventListener('touchstart', (e) => { e.clientX = e.touches[0].clientX; e.clientY = e.touches[0].clientY; canvas.dispatchEvent(new MouseEvent('mousedown', e)); e.preventDefault(); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { e.clientX = e.touches[0].clientX; e.clientY = e.touches[0].clientY; canvas.dispatchEvent(new MouseEvent('mousemove', e)); e.preventDefault(); }, {passive: false});
+        canvas.addEventListener('touchend', () => { window.dispatchEvent(new Event('mouseup')); });
+
+        // --- Recording Logic ---
         function updateTimer() {
             const mins = Math.floor(secondsRecorded / 60).toString().padStart(2, '0');
             const secs = (secondsRecorded % 60).toString().padStart(2, '0');
             timerDisplay.textContent = `${mins}:${secs}`;
         }
 
-        function startTimer() {
-            timerInterval = setInterval(() => {
-                if (!isPaused) {
-                    secondsRecorded++;
-                    updateTimer();
-                }
-            }, 1000);
-        }
-
-        function resetTimer() {
-            clearInterval(timerInterval);
-            secondsRecorded = 0;
-            updateTimer();
-        }
-
-        // Recording Logic
         async function startRecording() {
-            if (audioContext && audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
+            if (audioContext && audioContext.state === 'suspended') audioContext.resume();
 
-            if (useCountdown) {
+            if (S.useCountdown) {
                 const overlay = document.getElementById('countdown-overlay');
                 const num = document.getElementById('countdown-number');
                 overlay.classList.remove('hidden');
@@ -692,334 +1340,193 @@
                     if(audioContext && audioContext.state === 'running') {
                         const osc = audioContext.createOscillator();
                         const gain = audioContext.createGain();
-                        osc.connect(gain);
-                        gain.connect(audioContext.destination);
+                        osc.connect(gain); gain.connect(audioContext.destination);
                         osc.frequency.value = 800;
                         gain.gain.setValueAtTime(0.05, audioContext.currentTime);
                         gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
-                        osc.start();
-                        osc.stop(audioContext.currentTime + 0.1);
+                        osc.start(); osc.stop(audioContext.currentTime + 0.1);
                     }
                     await new Promise(r => setTimeout(r, 1000));
                 }
                 
                 overlay.classList.add('hidden');
                 startBtn.disabled = false;
-                
-                if(audioContext && audioContext.state === 'running') {
-                    const osc = audioContext.createOscillator();
-                    const gain = audioContext.createGain();
-                    osc.connect(gain);
-                    gain.connect(audioContext.destination);
-                    osc.frequency.value = 1200;
-                    gain.gain.setValueAtTime(0.05, audioContext.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
-                    osc.start();
-                    osc.stop(audioContext.currentTime + 0.3);
-                }
             }
 
             recordedChunks = [];
-            
-            // Capture requested FPS from dropdown
-            const fps = parseInt(document.getElementById('video-fps')?.value || 30);
-            
-            // Capture video from canvas at specified fps
+            const fps = parseInt(fpsSelect.value || 60);
             const canvasStream = canvas.captureStream(fps);
-            
-            // Combine with processed audio tracks (with gain applied) or fallback to raw
-            const audioTracksToRecord = audioDest ? audioDest.stream.getAudioTracks() : audioStream.getAudioTracks();
-            
-            const tracks = [
-                ...canvasStream.getVideoTracks(),
-                ...audioTracksToRecord
-            ];
-            
-            const combinedStream = new MediaStream(tracks);
+            const audioTracks = audioDest ? audioDest.stream.getAudioTracks() : audioStream.getAudioTracks();
+            const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...audioTracks]);
 
-            // Attempt to use high-quality encoding based on format selection
-            const requestedFormat = document.getElementById('video-format')?.value || 'mp4';
             let mimeType = 'video/mp4';
             let fileExtension = 'mp4';
             
-            if (requestedFormat === 'mp4') {
-                if (MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.4d002a, mp4a.40.2"')) {
-                    mimeType = 'video/mp4; codecs="avc1.4d002a, mp4a.40.2"';
-                } else if (MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.42E01E, mp4a.40.2"')) {
-                    mimeType = 'video/mp4; codecs="avc1.42E01E, mp4a.40.2"';
-                } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-                    mimeType = 'video/mp4';
-                } else {
-                    showToast('MP4 not natively supported here. Falling back to WebM.', 'error');
-                    fileExtension = 'webm';
-                    mimeType = 'video/webm; codecs=vp9';
-                }
+            if (S.format === 'mp4') {
+                if (MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.4d002a, mp4a.40.2"')) mimeType = 'video/mp4; codecs="avc1.4d002a, mp4a.40.2"';
+                else if (MediaRecorder.isTypeSupported('video/mp4')) mimeType = 'video/mp4';
+                else { fileExtension = 'webm'; mimeType = 'video/webm; codecs=vp9'; }
             } else {
                 fileExtension = 'webm';
-                if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) {
-                    mimeType = 'video/webm; codecs=vp9';
-                } else if (MediaRecorder.isTypeSupported('video/webm; codecs=vp8')) {
-                    mimeType = 'video/webm; codecs=vp8';
-                } else {
-                    mimeType = 'video/webm';
-                }
+                if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) mimeType = 'video/webm; codecs=vp9';
+                else mimeType = 'video/webm';
             }
 
-            const options = { mimeType };
-            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-                 options.mimeType = ''; // Fallback if still unsupported
-            }
+            mediaRecorder = new MediaRecorder(combinedStream, { mimeType });
 
-            mediaRecorder = new MediaRecorder(combinedStream, options);
-
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) recordedChunks.push(e.data);
-            };
-
+            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
             mediaRecorder.onstop = async () => {
-                const finalMimeType = options.mimeType || 'video/webm';
-                const blob = new Blob(recordedChunks, { type: finalMimeType });
-                await saveRecording(blob, fileExtension, finalMimeType);
-                resetTimer();
-                showToast('Recording saved securely.', 'success');
+                const blob = new Blob(recordedChunks, { type: mimeType });
+                saveRecordingFile(blob, fileExtension, mimeType);
+                clearInterval(timerInterval); secondsRecorded = 0; updateTimer();
             };
 
-            mediaRecorder.start(1000); // chunk every second
+            mediaRecorder.start(1000);
             isPaused = false;
             
-            // UI Updates
+            // UI Toggle
             startBtn.classList.add('hidden');
-            pauseBtn.classList.remove('hidden');
-            pauseBtn.classList.add('flex');
-            stopBtn.classList.remove('hidden');
-            stopBtn.classList.add('flex');
-            pauseBtn.disabled = false;
-            stopBtn.disabled = false;
-            recordingIndicator.classList.remove('hidden');
-            recordingIndicator.classList.add('flex');
+            pauseBtn.classList.remove('hidden'); pauseBtn.classList.add('flex'); pauseBtn.disabled = false;
+            stopBtn.classList.remove('hidden'); stopBtn.classList.add('flex'); stopBtn.disabled = false;
+            recordingIndicator.classList.remove('hidden'); recordingIndicator.classList.add('flex');
             
-            startTimer();
+            timerInterval = setInterval(() => { if (!isPaused) { secondsRecorded++; updateTimer(); } }, 1000);
             showToast('Recording started.');
         }
 
-        async function saveRecording(blob, ext = 'webm', mimeType = 'video/webm') {
-            const filename = `StudioRecording_${new Date().toISOString().replace(/[:.]/g, '-')}.${ext}`;
-            
+        async function saveRecordingFile(blob, ext, mimeType) {
+            const filename = `WebStudio_${new Date().toISOString().replace(/[:.]/g, '-')}.${ext}`;
             try {
-                // Try modern File System Access API
                 if ('showSaveFilePicker' in window) {
                     const handle = await window.showSaveFilePicker({
                         suggestedName: filename,
-                        types: [{
-                            description: 'Video File',
-                            accept: { [mimeType]: [`.${ext}`] },
-                        }],
+                        types: [{ description: 'Video File', accept: { [mimeType]: [`.${ext}`] } }]
                     });
                     const writable = await handle.createWritable();
                     await writable.write(blob);
                     await writable.close();
-                } else {
-                    // Fallback to traditional download
-                    throw new Error('File System Access API not supported');
-                }
+                    showToast('Recording saved to device.', 'success');
+                } else throw new Error('Fallback');
             } catch (err) {
                 if (err.name !== 'AbortError') {
-                    // Fallback execution
                     const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    setTimeout(() => {
-                        document.body.removeChild(a);
-                        window.URL.revokeObjectURL(url);
-                    }, 100);
-                } else {
-                    showToast('Save cancelled.', 'error');
+                    const a = document.createElement('a'); a.href = url; a.download = filename;
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    showToast('Recording downloaded.', 'success');
                 }
             }
         }
 
-        // Event Listeners
+        // --- Event Listeners & UI Binding ---
         audioSelect.addEventListener('change', updateAudioStream);
-        videoSelect.addEventListener('change', updateVideoStream);
+        videoSelect.addEventListener('change', updateCameraStream);
+        resSelect.addEventListener('change', updateCameraStream);
+        hzSelect.addEventListener('change', updateCameraStream); // Re-trigger on Hz change
         
-        document.getElementById('video-resolution')?.addEventListener('change', updateResolution);
-        
-        document.getElementById('mirror-btn')?.addEventListener('click', (e) => {
-            isMirrored = !isMirrored;
-            const btn = e.currentTarget;
-            if(isMirrored) {
-                btn.classList.replace('bg-slate-700', 'bg-indigo-600');
-                btn.classList.replace('border-slate-600', 'border-indigo-500');
-                btn.classList.replace('text-slate-300', 'text-white');
-            } else {
-                btn.classList.replace('bg-indigo-600', 'bg-slate-700');
-                btn.classList.replace('border-indigo-500', 'border-slate-600');
-                btn.classList.replace('text-white', 'text-slate-300');
-            }
+        document.getElementById('mic-volume').addEventListener('input', (e) => {
+            if (masterGain) masterGain.gain.value = e.target.value / 100;
         });
 
-        document.getElementById('grid-btn')?.addEventListener('click', (e) => {
-            showGrid = !showGrid;
-            const btn = e.currentTarget;
-            if(showGrid) {
-                btn.classList.replace('bg-slate-700', 'bg-indigo-600');
-                btn.classList.replace('border-slate-600', 'border-indigo-500');
-                btn.classList.replace('text-slate-300', 'text-white');
-            } else {
-                btn.classList.replace('bg-indigo-600', 'bg-slate-700');
-                btn.classList.replace('border-indigo-500', 'border-slate-600');
-                btn.classList.replace('text-white', 'text-slate-300');
-            }
+        // Sliders Text Update
+        document.getElementById('cam-zoom').addEventListener('input', e => document.getElementById('val-zoom').textContent = `${parseFloat(e.target.value).toFixed(1)}x`);
+        document.getElementById('cam-pan-x').addEventListener('input', e => document.getElementById('val-panx').textContent = `${e.target.value}%`);
+        document.getElementById('cam-pan-y').addEventListener('input', e => document.getElementById('val-pany').textContent = `${e.target.value}%`);
+
+        document.getElementById('pip-size').addEventListener('input', e => document.getElementById('val-pip-size').textContent = `${e.target.value}px`);
+        document.getElementById('pip-border-width').addEventListener('input', e => document.getElementById('val-pip-border').textContent = `${e.target.value}px`);
+
+        document.getElementById('screen-share-btn').addEventListener('click', toggleScreenShare);
+
+        // Whiteboard Toggles
+        document.getElementById('whiteboard-btn').addEventListener('click', () => {
+            isWhiteboardActive = !isWhiteboardActive;
+            updateToggleUI(document.getElementById('wb-toggle-knob'), document.getElementById('wb-toggle-track'), isWhiteboardActive);
+            document.getElementById('whiteboard-tools').classList.toggle('hidden', !isWhiteboardActive);
+            canvas.style.cursor = isWhiteboardActive ? 'crosshair' : 'default';
         });
 
-        document.getElementById('countdown-btn')?.addEventListener('click', () => {
-            useCountdown = !useCountdown;
-            updateToggleUI(document.getElementById('countdown-toggle-knob'), document.getElementById('countdown-toggle-track'), useCountdown);
+        document.getElementById('wb-eraser').addEventListener('click', (e) => {
+            isErasing = !isErasing;
+            e.currentTarget.classList.toggle('bg-slate-700');
+            e.currentTarget.classList.toggle('bg-indigo-600');
+            e.currentTarget.classList.toggle('text-white');
         });
 
-        document.getElementById('mic-volume')?.addEventListener('input', (e) => {
-            const val = e.target.value;
-            document.getElementById('vol-label').textContent = `${val}%`;
-            // Apply volume dynamically in real-time
-            if (masterGain) {
-                masterGain.gain.value = val / 100;
-            }
+        document.getElementById('wb-clear').addEventListener('click', () => {
+            drawCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
         });
 
-        document.getElementById('pip-btn')?.addEventListener('click', async () => {
-            try {
-                if (document.pictureInPictureElement) {
-                    await document.exitPictureInPicture();
-                } else if (rawVideo.readyState >= 2) {
-                    // Start Picture-in-Picture using the hidden raw video feed
-                    await rawVideo.requestPictureInPicture();
-                }
-            } catch (error) {
-                console.error("PiP Error:", error);
-                showToast('Picture-in-Picture failed. Check permissions.', 'error');
-            }
+        // Basic Toggles
+        document.getElementById('mirror-btn').addEventListener('click', (e) => {
+            S.isMirrored = !S.isMirrored;
+            e.currentTarget.classList.toggle('bg-indigo-600'); e.currentTarget.classList.toggle('bg-slate-700');
+            e.currentTarget.classList.toggle('border-indigo-500'); e.currentTarget.classList.toggle('border-slate-600');
+            e.currentTarget.classList.toggle('text-white'); e.currentTarget.classList.toggle('text-slate-300');
+            saveSettings();
         });
 
-        effectSelect.addEventListener('change', (e) => {
-            currentFilter = e.target.value;
+        document.getElementById('grid-btn').addEventListener('click', (e) => {
+            S.showGrid = !S.showGrid;
+            e.currentTarget.classList.toggle('bg-indigo-600'); e.currentTarget.classList.toggle('bg-slate-700');
+            e.currentTarget.classList.toggle('border-indigo-500'); e.currentTarget.classList.toggle('border-slate-600');
+            e.currentTarget.classList.toggle('text-white'); e.currentTarget.classList.toggle('text-slate-300');
+            saveSettings();
         });
 
+        document.getElementById('countdown-btn').addEventListener('click', () => {
+            S.useCountdown = !S.useCountdown;
+            updateToggleUI(document.getElementById('countdown-toggle-knob'), document.getElementById('countdown-toggle-track'), S.useCountdown);
+            saveSettings();
+        });
+
+        document.getElementById('mute-btn').addEventListener('click', () => {
+            isMuted = !isMuted;
+            if (audioStream) audioStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
+            updateToggleUI(document.getElementById('mute-toggle-knob'), document.getElementById('mute-toggle-track'), isMuted);
+        });
+
+        document.getElementById('snapshot-btn').addEventListener('click', () => {
+            const a = document.createElement('a');
+            a.href = canvas.toDataURL('image/png');
+            a.download = `Snapshot_${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+            a.click();
+            showToast('Snapshot captured.', 'success');
+        });
+
+        // Rec controls
         startBtn.addEventListener('click', startRecording);
-        
         pauseBtn.addEventListener('click', () => {
             if (!mediaRecorder) return;
-            
+            const pTxt = document.getElementById('pause-text');
             if (mediaRecorder.state === 'recording') {
-                mediaRecorder.pause();
-                isPaused = true;
-                pauseText.textContent = 'Resume';
-                pauseBtn.innerHTML = `
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <span>Resume</span>
-                `;
-                recordingIndicator.querySelector('.w-3').classList.remove('pulse-red');
-                recordingIndicator.querySelector('.w-3').classList.add('bg-yellow-500');
+                mediaRecorder.pause(); isPaused = true; pTxt.textContent = 'Resume';
+                recordingIndicator.querySelector('.w-3').className = 'w-3 h-3 bg-yellow-500 rounded-full';
             } else if (mediaRecorder.state === 'paused') {
-                mediaRecorder.resume();
-                isPaused = false;
-                pauseText.textContent = 'Pause';
-                pauseBtn.innerHTML = `
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <span>Pause</span>
-                `;
-                recordingIndicator.querySelector('.w-3').classList.add('pulse-red');
-                recordingIndicator.querySelector('.w-3').classList.remove('bg-yellow-500');
+                mediaRecorder.resume(); isPaused = false; pTxt.textContent = 'Pause';
+                recordingIndicator.querySelector('.w-3').className = 'w-3 h-3 bg-red-500 rounded-full pulse-red';
             }
         });
-
         stopBtn.addEventListener('click', () => {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
-                
-                // Reset UI
                 startBtn.classList.remove('hidden');
-                pauseBtn.classList.add('hidden');
-                pauseBtn.classList.remove('flex');
-                stopBtn.classList.add('hidden');
-                stopBtn.classList.remove('flex');
-                recordingIndicator.classList.add('hidden');
-                recordingIndicator.classList.remove('flex');
-                
-                // Reset Pause button state
-                isPaused = false;
-                pauseBtn.innerHTML = `
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <span>Pause</span>
-                `;
-                recordingIndicator.querySelector('.w-3').classList.add('pulse-red', 'bg-red-500');
-                recordingIndicator.querySelector('.w-3').classList.remove('bg-yellow-500');
+                pauseBtn.classList.add('hidden'); pauseBtn.classList.remove('flex');
+                stopBtn.classList.add('hidden'); stopBtn.classList.remove('flex');
+                recordingIndicator.classList.add('hidden'); recordingIndicator.classList.remove('flex');
             }
         });
 
-        // Toggle UI helper
-        function updateToggleUI(knob, track, state) {
-            if (state) {
-                knob.classList.add('translate-x-4', 'bg-white');
-                knob.classList.remove('bg-slate-400');
-                track.classList.add('bg-indigo-500');
-                track.classList.remove('bg-slate-800');
-            } else {
-                knob.classList.remove('translate-x-4', 'bg-white');
-                knob.classList.add('bg-slate-400');
-                track.classList.remove('bg-indigo-500');
-                track.classList.add('bg-slate-800');
-            }
-        }
-
-        screenShareBtn.addEventListener('click', () => {
-            isScreenRecording = !isScreenRecording;
-            updateToggleUI(document.getElementById('screen-toggle-knob'), document.getElementById('screen-toggle-track'), isScreenRecording);
-            updateVideoStream();
-        });
-
-        muteBtn.addEventListener('click', () => {
-            isMuted = !isMuted;
-            if (audioStream) {
-                audioStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
-            }
-            updateToggleUI(document.getElementById('mute-toggle-knob'), document.getElementById('mute-toggle-track'), isMuted);
-            showToast(isMuted ? 'Microphone muted.' : 'Microphone unmuted.');
-        });
-
-        snapshotBtn.addEventListener('click', () => {
-            // Get data URL from canvas (which includes filters)
-            const dataUrl = canvas.toDataURL('image/png');
-            const a = document.createElement('a');
-            a.href = dataUrl;
-            a.download = `Snapshot_${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            // Visual flash effect
-            const flash = document.createElement('div');
-            flash.className = 'absolute inset-0 bg-white z-50 pointer-events-none transition-opacity duration-500';
-            document.querySelector('main').appendChild(flash);
-            
-            // Trigger reflow
-            void flash.offsetWidth;
-            flash.classList.add('opacity-0');
-            
-            setTimeout(() => flash.remove(), 500);
-            showToast('Snapshot saved.', 'success');
-        });
-
-        // Initialize App
+        // Initialize
         window.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            resizeCanvases();
             getDevices().then(() => {
                 updateAudioStream();
-                updateVideoStream();
+                updateCameraStream();
             });
         });
+
+        window.addEventListener('resize', resizeCanvases);
 
     </script>
 </body>
