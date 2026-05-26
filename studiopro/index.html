@@ -55,7 +55,7 @@
         }
         input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
-        /* Custom Ladder Range Styling - Hides the ugly black track completely */
+        /* Custom Ladder Range Styling */
         input[type=range].custom-ladder-thumb {
             -webkit-appearance: none;
             background: transparent !important; 
@@ -76,14 +76,15 @@
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0,0,0,0.5);
             transition: border-color 0.15s;
-            margin-top: -3px; /* visual fix for alignment */
+            margin-top: -3px; 
         }
         input[type=range].custom-ladder-thumb::-webkit-slider-thumb:hover { border-color: #818cf8; }
 
         details > summary { list-style: none; cursor: pointer; }
         details > summary::-webkit-details-marker { display: none; }
 
-        #pdf-scrollbar-thumb { transition: top 0.1s ease-out; }
+        #pdf-scrollbar-thumb { transition: top 0.1s ease-out, background-color 0.15s; }
+        #pdf-scrollbar-thumb.dragging { transition: background-color 0.15s; } /* Remove top transition when actively dragging */
         
         .tool-btn.active {
             background-color: #4f46e5;
@@ -188,8 +189,8 @@
                             </button>
                         </div>
 
-                        <div class="flex justify-between items-center text-xs text-slate-400 bg-slate-800 p-2 rounded-lg border border-slate-700">
-                            <span>Scroll: Pan Y</span>
+                        <div class="flex justify-between items-center text-[11px] text-slate-400 bg-slate-800 p-2 rounded-lg border border-slate-700 text-center gap-2 leading-tight">
+                            <span>Scroll/Arrow: Pan Y</span>
                             <span>Ctrl+Scroll: Zoom</span>
                         </div>
 
@@ -362,8 +363,8 @@
                 <canvas id="ui-canvas" class="absolute inset-0 w-full h-full object-cover touch-none z-10"></canvas>
 
                 <!-- PDF Scrollbar (DOM Element - NEVER RECORDED) -->
-                <div id="pdf-scrollbar-track" class="absolute right-2 top-4 bottom-4 w-2 bg-black/40 rounded-full z-20 hidden backdrop-blur-sm border border-white/10 pointer-events-none">
-                    <div id="pdf-scrollbar-thumb" class="absolute top-0 right-0 w-full bg-white/60 rounded-full min-h-[40px] pointer-events-none shadow-md"></div>
+                <div id="pdf-scrollbar-track" class="absolute right-2 top-4 bottom-4 w-2 bg-black/40 rounded-full z-20 hidden backdrop-blur-sm border border-white/10 cursor-pointer">
+                    <div id="pdf-scrollbar-thumb" class="absolute top-0 right-0 w-full bg-white/60 hover:bg-white/90 rounded-full min-h-[40px] shadow-md cursor-grab active:cursor-grabbing"></div>
                 </div>
 
                 <!-- Timer overlay (Only visible pre-recording) -->
@@ -374,6 +375,13 @@
                 <!-- Center screen brush size indicator (NEVER RECORDED) -->
                 <div id="brush-size-indicator" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-0 transition-opacity duration-200 z-50 flex items-center justify-center">
                     <div id="brush-size-circle" class="rounded-full shadow-[0_0_10px_rgba(0,0,0,0.3)] transition-all duration-75"></div>
+                </div>
+
+                <!-- PDF Info Header (NEW) -->
+                <div id="pdf-info-header" class="absolute top-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-5 py-2.5 rounded-full text-sm font-medium backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none z-40 hidden shadow-xl border border-white/10 flex items-center gap-3">
+                    <span id="pdf-info-name" class="max-w-[250px] truncate text-slate-300">filename.pdf</span>
+                    <div class="w-px h-4 bg-slate-600"></div>
+                    <span id="pdf-info-page" class="font-bold tracking-wide">Page 1 / X</span>
                 </div>
             </div>
         </div>
@@ -401,11 +409,10 @@
 
     <!-- Right Side Permanent Drawing Toolbar -->
     <aside class="w-16 h-full bg-slate-900 border-l border-slate-800 flex flex-col items-center justify-center shrink-0 z-40 relative">
-        <!-- Compact, rounded-2xl padding box -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl py-2 px-1 flex flex-col items-center gap-1 shadow-lg max-h-[95vh] overflow-y-auto no-scrollbar w-14">
             
-            <!-- Pointer / Move Tool -->
-            <button class="tool-btn w-10 h-10 shrink-0 flex flex-col items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-700 transition-colors" data-tool="pointer" title="Interact / Move PIP">
+            <!-- Presenter Focus Tool -->
+            <button class="tool-btn w-10 h-10 shrink-0 flex flex-col items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-700 transition-colors" data-tool="pointer" title="Presenter Focus (Hide Media & Show Full Camera)">
                 <i class="fa-solid fa-user-circle text-lg"></i>
             </button>
             
@@ -455,9 +462,7 @@
             <!-- Compact Ladder Size Slider using CSS Shape -->
             <div class="h-16 flex flex-col items-center justify-center w-full relative shrink-0">
                 <div class="relative w-8 h-16 flex items-center justify-center bg-slate-900 rounded-lg p-0.5 border border-slate-700 shadow-inner overflow-hidden">
-                    <!-- CSS Shape for the Ladder (No ugly track line) -->
                     <div class="absolute inset-0 m-auto bg-slate-600" style="width: 12px; height: 100%; clip-path: polygon(0 0, 100% 0, 70% 100%, 30% 100%);"></div>
-                    <!-- Z-10 required to click the invisible input over the shape -->
                     <input type="range" id="wb-size" min="1" max="60" value="16" class="w-16 -rotate-90 absolute cursor-pointer m-0 appearance-none bg-transparent outline-none custom-ladder-thumb z-10">
                 </div>
             </div>
@@ -469,7 +474,7 @@
 
             <!-- Canvas Background Selector -->
             <div class="flex flex-col items-center gap-0.5 w-full shrink-0" title="Canvas Background">
-                <span class="text-[7px] text-slate-400 font-bold uppercase tracking-wider leading-tight">Board</span>
+                <span class="text-[7px] text-slate-400 font-bold uppercase tracking-wider leading-tight text-center">Board Type</span>
                 <select id="wb-bg" class="w-12 h-6 bg-slate-700 border border-slate-600 rounded text-[9px] text-center text-white focus:outline-none cursor-pointer appearance-none">
                     <option value="transparent">Clear</option>
                     <option value="white">White</option>
@@ -496,7 +501,7 @@
     </div>
 
     <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed bottom-24 right-20 flex flex-col gap-2 z-50 pointer-events-none"></div>
+    <div id="toast-container" class="fixed bottom-24 right-20 flex flex-col gap-2 z-50 pointer-events-none items-end"></div>
 
     <script>
         // --- State Management & Defaults ---
@@ -539,7 +544,9 @@
         let isWhiteboardActive = true; 
         let isDrawing = false;
         let lastX = 0, lastY = 0;
-        let strokes = []; // Array of drawn paths { tool, color, size, points }
+        
+        let wbStrokes = []; // Global Whiteboard Strokes
+        let needsWbRedraw = true;
         let currentStroke = null;
         
         // Advanced PDF / Media Presentation State
@@ -582,7 +589,7 @@
         const uiCanvas = document.getElementById('ui-canvas');
         const uiCtx = uiCanvas.getContext('2d');
         
-        // Setup hidden canvas for whiteboard drawing
+        // Setup hidden canvas for whiteboard & document stroke drawing
         const drawingCanvas = document.createElement('canvas');
         const drawCtx = drawingCanvas.getContext('2d');
         
@@ -602,6 +609,39 @@
         let masterGain = null;
         let audioDest = null;
         const NUM_AUDIO_BARS = 10;
+
+        // --- Helper for managing scrollbar visibility decoupling ---
+        function updateScrollbarVisibility() {
+            if (isPdfActive && S.wbBg === 'transparent' && S.wbTool !== 'pointer') {
+                scrollTrack.classList.remove('hidden');
+            } else {
+                scrollTrack.classList.add('hidden');
+            }
+        }
+
+        // --- Data Persistence logic ---
+        function saveStrokes() {
+            try {
+                localStorage.setItem('webStudioPro_wbStrokes', JSON.stringify(wbStrokes));
+                if (isPdfActive && activeMediaIndex >= 0) {
+                    const media = mediaQueue[activeMediaIndex];
+                    if (media.strokes && media.strokes.length > 0) {
+                        localStorage.setItem('webStudioPro_pdfStrokes_' + media.name, JSON.stringify(media.strokes));
+                    } else {
+                        localStorage.removeItem('webStudioPro_pdfStrokes_' + media.name);
+                    }
+                }
+            } catch(e) { console.warn("Local storage quota exceeded for strokes."); }
+        }
+
+        // --- Helper for strokes targeting ---
+        function getActiveStrokes() {
+            if (isPdfActive && activeMediaIndex >= 0 && S.wbBg === 'transparent') {
+                if(!mediaQueue[activeMediaIndex].strokes) mediaQueue[activeMediaIndex].strokes = [];
+                return mediaQueue[activeMediaIndex].strokes;
+            }
+            return wbStrokes;
+        }
 
         // --- Local Storage Tying ---
         function saveSettings() {
@@ -634,6 +674,8 @@
                 if (saved) { S = { ...DEFAULT_SETTINGS, ...JSON.parse(saved) }; }
                 const savedZooms = localStorage.getItem('webStudioProPdfZooms');
                 if (savedZooms) { pdfZoomMap = JSON.parse(savedZooms); }
+                const savedWb = localStorage.getItem('webStudioPro_wbStrokes');
+                if (savedWb) { wbStrokes = JSON.parse(savedWb); needsWbRedraw = true; }
             } catch(e) {}
             
             effectSelect.value = S.effect; resSelect.value = S.resolution;
@@ -665,6 +707,7 @@
             
             isWhiteboardActive = S.wbTool !== 'pointer';
             uiCanvas.style.cursor = isWhiteboardActive ? 'crosshair' : 'default';
+            updateScrollbarVisibility();
         }
 
         function toggleBtnColor(id, isActive) {
@@ -692,13 +735,11 @@
             const circle = document.getElementById('brush-size-circle');
             
             const scale = canvas.getBoundingClientRect().height / CANVAS_HEIGHT;
-            // Ensure minimum visual size (e.g. 12px) so even a 1px dot is clearly seen temporarily
             const displaySize = Math.max(12, size * scale);
             
             circle.style.width = `${displaySize}px`;
             circle.style.height = `${displaySize}px`;
             
-            // Solid color, no border
             circle.style.backgroundColor = getActiveColor();
             circle.style.border = 'none';
             circle.style.opacity = S.wbTool === 'highlighter' ? '0.5' : '1';
@@ -710,7 +751,12 @@
 
         document.querySelectorAll('input, select').forEach(el => {
             if (el.id !== 'wb-color' && el.id !== 'wb-size-val') { 
-                el.addEventListener('change', saveSettings);
+                el.addEventListener('change', (e) => {
+                    saveSettings();
+                    if (e.target.id === 'wb-size') {
+                        showBrushSizeIndicator(e.target.value);
+                    }
+                });
                 if(el.type === 'range' || el.type === 'text' || el.type === 'number') {
                     el.addEventListener('input', (e) => {
                         saveSettings();
@@ -747,7 +793,6 @@
             showBrushSizeIndicator(val);
         });
 
-        // Timestamp feature
         document.getElementById('watermark-ts-btn').addEventListener('click', () => {
             const input = document.getElementById('watermark-input');
             const ts = new Date().toLocaleString();
@@ -757,6 +802,22 @@
             showToast('Timestamp added', 'success');
         });
 
+        // Explicit Board Type Change Listener (Crucial for resetting caching and isolating state)
+        document.getElementById('wb-bg').addEventListener('change', (e) => {
+            // Auto-exit Presenter Focus when interacting with the board background setting
+            if (S.wbTool === 'pointer') {
+                S.wbTool = 'pen1';
+                isWhiteboardActive = true;
+                uiCanvas.style.cursor = 'crosshair';
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active', 'text-white'));
+                const penBtn = document.querySelector('.tool-btn[data-tool="pen1"]');
+                if (penBtn) penBtn.classList.add('active', 'text-white');
+                saveSettings();
+            }
+            needsWbRedraw = true; // Clear out PDF strokes overlay
+            updateScrollbarVisibility();
+        });
+
         // --- Background Blur Model Loading ---
         async function initSegmenter() {
             if(segmenter) return;
@@ -764,30 +825,50 @@
             segmenter = new SelfieSegmentation({locateFile: (file) => {
                 return `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`;
             }});
-            segmenter.setOptions({ modelSelection: 1 }); // 1 = faster landscape model
+            segmenter.setOptions({ modelSelection: 1 });
             segmenter.onResults((results) => {
                 currentSegmentationMask = results.segmentationMask;
-                isSegmenting = false; // allow next frame to be sent
+                isSegmenting = false; 
             });
             await segmenter.initialize();
-            document.getElementById('toast-container').innerHTML = ''; // clear loading
+            document.getElementById('toast-container').innerHTML = ''; 
             showToast('Background blur ready.', 'success');
         }
 
+        // Updated Resilient Toast Notification with Close Button
         function showToast(message, type = 'info', persist = false) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            const color = type === 'success' ? 'bg-emerald-600' : (type === 'error' ? 'bg-red-500' : 'bg-slate-800 border border-slate-700');
-            toast.className = `${color} text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transform translate-x-8 opacity-0 transition-all duration-300`;
-            toast.innerHTML = `<span class="text-sm font-medium">${message}</span>`;
+            
+            let colorClass = 'bg-slate-800 border border-slate-700';
+            let iconHtml = '<i class="fa-solid fa-circle-info text-indigo-400"></i>';
+            if (type === 'success') { colorClass = 'bg-emerald-600'; iconHtml = '<i class="fa-solid fa-circle-check"></i>'; }
+            if (type === 'error') { colorClass = 'bg-red-500'; iconHtml = '<i class="fa-solid fa-circle-exclamation"></i>'; }
+
+            toast.className = `${colorClass} text-white px-4 py-3 rounded-xl shadow-2xl flex items-center justify-between gap-4 transform translate-x-8 opacity-0 transition-all duration-300 w-auto min-w-[280px] pointer-events-auto`;
+            
+            toast.innerHTML = `
+                <div class="flex items-center gap-3">
+                    ${iconHtml}
+                    <span class="text-sm font-medium leading-tight">${message}</span>
+                </div>
+                <button class="text-white/60 hover:text-white hover:bg-white/10 rounded-md w-6 h-6 flex items-center justify-center transition-colors" title="Close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            `;
+            
+            toast.close = () => {
+                toast.classList.add('translate-x-8', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            };
+
+            toast.querySelector('button').onclick = toast.close;
+
             container.appendChild(toast);
             requestAnimationFrame(() => toast.classList.remove('translate-x-8', 'opacity-0'));
             
             if(!persist) {
-                setTimeout(() => {
-                    toast.classList.add('translate-x-8', 'opacity-0');
-                    setTimeout(() => toast.remove(), 300);
-                }, 3000);
+                setTimeout(() => { if(toast.parentElement) toast.close(); }, 3500);
             }
             return toast;
         }
@@ -990,7 +1071,8 @@
             isPdfActive = false; pdfPagesArray = []; mediaQueue = []; activeMediaIndex = -1;
             document.getElementById('pdf-controls').classList.add('hidden'); document.getElementById('pdf-controls').classList.remove('flex');
             document.getElementById('pdf-upload-btn').classList.remove('hidden'); document.getElementById('media-list-container').innerHTML = '';
-            scrollTrack.classList.add('hidden');
+            needsWbRedraw = true; // Ensure whiteboard refresh when leaving PDF mode
+            updateScrollbarVisibility();
             clampPipBounds();
         }
 
@@ -998,8 +1080,15 @@
             let added = false;
             Array.from(files).forEach(file => {
                 if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
-                    mediaQueue.push({ file: file, type: file.type.startsWith('image/') ? 'image' : 'pdf', name: file.name });
-                    if(!pdfZoomMap[file.name]) pdfZoomMap[file.name] = 1.0; // Init default zoom
+                    // Pre-load saved strokes securely
+                    let savedStrokes = [];
+                    try {
+                        const s = localStorage.getItem('webStudioPro_pdfStrokes_' + file.name);
+                        if (s) savedStrokes = JSON.parse(s);
+                    } catch(e) {}
+
+                    mediaQueue.push({ file: file, type: file.type.startsWith('image/') ? 'image' : 'pdf', name: file.name, strokes: savedStrokes, pages: null });
+                    if(!pdfZoomMap[file.name]) pdfZoomMap[file.name] = 1.0;
                     added = true;
                 }
             });
@@ -1012,18 +1101,42 @@
 
         async function loadMedia(index) {
             if(index < 0 || index >= mediaQueue.length) return;
-            activeMediaIndex = index;
+            
+            // Auto-exit Presenter Focus when clicking on media to present it
+            if (S.wbTool === 'pointer') {
+                S.wbTool = 'pen1';
+                isWhiteboardActive = true;
+                uiCanvas.style.cursor = 'crosshair';
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active', 'text-white'));
+                const penBtn = document.querySelector('.tool-btn[data-tool="pen1"]');
+                if (penBtn) penBtn.classList.add('active', 'text-white');
+            }
+            
+            S.wbBg = 'transparent';
+            document.getElementById('wb-bg').value = 'transparent';
+            saveSettings();
+
             const item = mediaQueue[index];
+            activeMediaIndex = index;
             isPdfActive = true; 
-            pdfScrollY = 0; // Reset scroll on load
+            needsWbRedraw = true; // Critical: clears the canvas when moving back to the new PDF
             
             document.getElementById('pdf-controls').classList.remove('hidden');
             document.getElementById('pdf-controls').classList.add('flex');
             document.getElementById('pdf-upload-btn').classList.add('hidden');
-            scrollTrack.classList.remove('hidden');
             
+            updateScrollbarVisibility();
             updateMediaListUI(); 
             clampPipBounds();
+
+            // Super-fast Instant Switching (No Black Flash)
+            if (item.pages) {
+                pdfPagesArray = item.pages;
+                pdfScrollY = 0;
+                recalcPdfScrollBounds();
+                showPageNumberOverlay();
+                return;
+            }
 
             if (item.type === 'pdf') {
                 pdfLoadingToast = showToast('Rendering PDF pages...', 'info', true);
@@ -1032,30 +1145,50 @@
                 reader.onload = function() {
                     const typedarray = new Uint8Array(this.result);
                     pdfjsLib.getDocument(typedarray).promise.then(async (pdf) => {
-                        pdfPagesArray = [];
-                        for(let i = 1; i <= pdf.numPages; i++) {
-                            const page = await pdf.getPage(i);
-                            const viewport = page.getViewport({ scale: 2.5 }); // High Quality
-                            const pc = document.createElement('canvas');
-                            pc.width = viewport.width; pc.height = viewport.height;
-                            await page.render({ canvasContext: pc.getContext('2d'), viewport: viewport }).promise;
-                            pdfPagesArray.push({ canvas: pc, w: viewport.width, h: viewport.height });
+                        try {
+                            let tempPagesArray = [];
+                            for(let i = 1; i <= pdf.numPages; i++) {
+                                const page = await pdf.getPage(i);
+                                const viewport = page.getViewport({ scale: 1.5 });
+                                const pc = document.createElement('canvas');
+                                pc.width = viewport.width; pc.height = viewport.height;
+                                await page.render({ canvasContext: pc.getContext('2d'), viewport: viewport }).promise;
+                                tempPagesArray.push({ canvas: pc, w: viewport.width, h: viewport.height });
+                            }
+                            
+                            item.pages = tempPagesArray; // Cache it
+                            
+                            if (activeMediaIndex === index) { // Atomic swap to avoid flash
+                                pdfPagesArray = tempPagesArray;
+                                pdfScrollY = 0;
+                                recalcPdfScrollBounds();
+                                showPageNumberOverlay();
+                            }
+                            if(pdfLoadingToast && pdfLoadingToast.parentElement) { pdfLoadingToast.close(); showToast('PDF Ready.', 'success'); }
+                        } catch (e) {
+                            if(pdfLoadingToast && pdfLoadingToast.parentElement) { pdfLoadingToast.close(); showToast('Error rendering PDF layout.', 'error'); }
                         }
-                        if(pdfLoadingToast) { pdfLoadingToast.remove(); showToast('PDF Ready.', 'success'); }
-                        recalcPdfScrollBounds();
+                    }).catch(err => {
+                        if(pdfLoadingToast && pdfLoadingToast.parentElement) { pdfLoadingToast.close(); showToast('Error opening PDF document.', 'error'); }
                     });
                 };
                 reader.readAsArrayBuffer(item.file);
             } else {
-                // Render Image as a single item array
                 const url = URL.createObjectURL(item.file);
                 const img = new Image();
                 img.onload = () => {
                     const pc = document.createElement('canvas');
                     pc.width = img.width; pc.height = img.height;
                     pc.getContext('2d').drawImage(img, 0, 0);
-                    pdfPagesArray = [{ canvas: pc, w: img.width, h: img.height }];
-                    recalcPdfScrollBounds();
+                    
+                    item.pages = [{ canvas: pc, w: img.width, h: img.height }]; // Cache it
+                    
+                    if (activeMediaIndex === index) {
+                        pdfPagesArray = item.pages;
+                        pdfScrollY = 0;
+                        recalcPdfScrollBounds();
+                        showPageNumberOverlay();
+                    }
                     URL.revokeObjectURL(url);
                 };
                 img.src = url;
@@ -1071,13 +1204,11 @@
                 const scale = Math.min(CANVAS_WIDTH / page.w, CANVAS_HEIGHT / page.h) * currentZoom;
                 totalH += (page.h * scale) + (PDF_PAGE_GAP * currentZoom);
             });
-            // Remove last gap padding
             totalH -= (PDF_PAGE_GAP * currentZoom);
             
             maxPdfScrollY = Math.max(0, totalH - CANVAS_HEIGHT);
-            pdfScrollY = Math.min(pdfScrollY, maxPdfScrollY); // clamp current scroll if zoom decreased
+            pdfScrollY = Math.min(pdfScrollY, maxPdfScrollY);
             
-            // Update UI Scrollbar Thumb height
             if(maxPdfScrollY > 0) {
                 const viewRatio = CANVAS_HEIGHT / totalH;
                 const thumbH = Math.max(40, scrollTrack.offsetHeight * viewRatio);
@@ -1094,47 +1225,166 @@
             const trackTravel = scrollTrack.offsetHeight - scrollThumb.offsetHeight;
             scrollThumb.style.top = `${percent * trackTravel}px`;
         }
+        
+        function getCurrentPage() {
+            if (!isPdfActive || pdfPagesArray.length === 0) return 1;
+            const currentZoom = pdfZoomMap[mediaQueue[activeMediaIndex].name] || 1.0;
+            let y = 0;
+            for (let i = 0; i < pdfPagesArray.length; i++) {
+                const page = pdfPagesArray[i];
+                const baseScale = Math.min(CANVAS_WIDTH / page.w, CANVAS_HEIGHT / page.h);
+                const drawH = page.h * baseScale * currentZoom;
+                
+                const viewportCenter = pdfScrollY + (CANVAS_HEIGHT / 2);
+                if (viewportCenter >= y && viewportCenter <= y + drawH + (PDF_PAGE_GAP * currentZoom)) {
+                    return i + 1;
+                }
+                y += drawH + (PDF_PAGE_GAP * currentZoom);
+            }
+            return pdfPagesArray.length;
+        }
 
+        let pageIndTimeout;
+        function showPageNumberOverlay() {
+            if(!isPdfActive || pdfPagesArray.length === 0) return;
+            const el = document.getElementById('pdf-info-header');
+            
+            document.getElementById('pdf-info-name').textContent = mediaQueue[activeMediaIndex].name;
+            document.getElementById('pdf-info-page').textContent = `Page ${getCurrentPage()} / ${pdfPagesArray.length}`;
+            
+            el.classList.remove('hidden');
+            requestAnimationFrame(() => { el.classList.remove('opacity-0'); });
+            
+            clearTimeout(pageIndTimeout);
+            pageIndTimeout = setTimeout(() => {
+                el.classList.add('opacity-0');
+                setTimeout(() => { if(el.classList.contains('opacity-0')) el.classList.add('hidden'); }, 300);
+            }, 2500);
+        }
+
+        // --- Scrollbar Drag & Navigation Logic ---
+        let isDraggingScrollbar = false;
+        let scrollDragStartY = 0;
+        let scrollDragStartScrollY = 0;
+
+        function handleScrollStart(e) {
+            isDraggingScrollbar = true;
+            scrollDragStartY = e.touches ? e.touches[0].clientY : e.clientY;
+            scrollDragStartScrollY = pdfScrollY;
+            scrollThumb.classList.add('dragging', 'bg-white');
+            e.stopPropagation();
+        }
+
+        function handleScrollMove(e) {
+            if (isDraggingScrollbar) {
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const deltaY = clientY - scrollDragStartY;
+                const trackTravel = scrollTrack.offsetHeight - scrollThumb.offsetHeight;
+                if (trackTravel > 0) {
+                    const scrollDelta = (deltaY / trackTravel) * maxPdfScrollY;
+                    pdfScrollY = Math.max(0, Math.min(maxPdfScrollY, scrollDragStartScrollY + scrollDelta));
+                    updateScrollThumbPosition();
+                    showPageNumberOverlay();
+                }
+                e.preventDefault(); 
+            }
+        }
+
+        function handleScrollEnd() {
+            if (isDraggingScrollbar) {
+                isDraggingScrollbar = false;
+                scrollThumb.classList.remove('dragging', 'bg-white');
+            }
+        }
+
+        scrollThumb.addEventListener('mousedown', handleScrollStart);
+        scrollThumb.addEventListener('touchstart', handleScrollStart, {passive: false});
+
+        window.addEventListener('mousemove', handleScrollMove);
+        window.addEventListener('touchmove', handleScrollMove, {passive: false});
+
+        window.addEventListener('mouseup', handleScrollEnd);
+        window.addEventListener('touchend', handleScrollEnd);
+
+        scrollTrack.addEventListener('mousedown', (e) => {
+            if (e.target === scrollThumb) return;
+            const rect = scrollTrack.getBoundingClientRect();
+            const clickY = e.clientY - rect.top;
+            const percent = clickY / scrollTrack.offsetHeight;
+            pdfScrollY = Math.max(0, Math.min(maxPdfScrollY, percent * maxPdfScrollY));
+            updateScrollThumbPosition();
+            showPageNumberOverlay();
+        });
+
+        // Document Keyboard Navigation
+        window.addEventListener('keydown', (e) => {
+            const forceCamera = (S.wbTool === 'pointer');
+            if (!isPdfActive || forceCamera || S.wbBg !== 'transparent') return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            const SCROLL_AMOUNT = 80;
+            const PAGE_AMOUNT = CANVAS_HEIGHT * 0.8;
+            let handled = false;
+            
+            switch(e.key) {
+                case 'ArrowDown': pdfScrollY += SCROLL_AMOUNT; handled = true; break;
+                case 'ArrowUp': pdfScrollY -= SCROLL_AMOUNT; handled = true; break;
+                case 'PageDown': pdfScrollY += PAGE_AMOUNT; handled = true; break;
+                case 'PageUp': pdfScrollY -= PAGE_AMOUNT; handled = true; break;
+                case 'Home': pdfScrollY = 0; handled = true; break;
+                case 'End': pdfScrollY = maxPdfScrollY; handled = true; break;
+            }
+            
+            if (handled) {
+                e.preventDefault();
+                pdfScrollY = Math.max(0, Math.min(maxPdfScrollY, pdfScrollY));
+                updateScrollThumbPosition();
+                showPageNumberOverlay();
+            }
+        });
 
         // --- UI & Rendering Engine ---
         
         function clampPipBounds() {
             const bw = S.pipBorderWidth;
-            // Limit coordinate within Box, accounting for the border
             pipX = Math.max(S.pipSize + bw, Math.min(pipX, CANVAS_WIDTH - S.pipSize - bw));
             pipY = Math.max(S.pipSize + bw, Math.min(pipY, CANVAS_HEIGHT - S.pipSize - bw));
         }
 
-        // Draw camera helper for background blur injection
         function drawCameraFeed(ctxToDraw, videoEl, drawX, drawY, drawW, drawH, activeEffect) {
             if (activeEffect === 'bg-blur' && currentSegmentationMask) {
                 if (segCanvas.width !== videoEl.videoWidth) {
-                    segCanvas.width = videoEl.videoWidth;
-                    segCanvas.height = videoEl.videoHeight;
+                    segCanvas.width = videoEl.videoWidth; segCanvas.height = videoEl.videoHeight;
                 }
-                
-                // 1. Draw blurred video
                 ctxToDraw.filter = 'blur(12px)';
                 ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
                 
-                // 2. Prepare sharp masked person on temporary off-screen canvas
                 segCtx.globalCompositeOperation = 'copy';
                 segCtx.drawImage(currentSegmentationMask, 0, 0, segCanvas.width, segCanvas.height);
                 segCtx.globalCompositeOperation = 'source-in';
                 segCtx.drawImage(videoEl, 0, 0, segCanvas.width, segCanvas.height);
                 
-                // 3. Draw sharp person over blurred background
                 ctxToDraw.filter = 'none';
                 ctxToDraw.drawImage(segCanvas, drawX, drawY, drawW, drawH);
             } else {
-                // Standard single-draw camera render
                 ctxToDraw.filter = activeEffect !== 'none' && activeEffect !== 'bg-blur' ? activeEffect : 'none';
                 ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
             }
         }
 
+        function drawSolidBoard(ctxToDraw) {
+            if (S.wbBg === 'white') {
+                ctxToDraw.fillStyle = '#f8fafc'; ctxToDraw.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                ctxToDraw.fillStyle = '#cbd5e1';
+                for(let i=0; i<CANVAS_WIDTH; i+=40) { for(let j=0; j<CANVAS_HEIGHT; j+=40) { ctxToDraw.beginPath(); ctxToDraw.arc(i, j, 2, 0, Math.PI*2); ctxToDraw.fill(); } }
+            } else if (S.wbBg === 'black') {
+                ctxToDraw.fillStyle = '#0f172a'; ctxToDraw.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                ctxToDraw.fillStyle = '#334155';
+                for(let i=0; i<CANVAS_WIDTH; i+=40) { for(let j=0; j<CANVAS_HEIGHT; j+=40) { ctxToDraw.beginPath(); ctxToDraw.arc(i, j, 1.5, 0, Math.PI*2); ctxToDraw.fill(); } }
+            }
+        }
+
         function renderCanvas() {
-            // Trigger segmentation model explicitly if enabled
             if (S.effect === 'bg-blur') {
                 if (!segmenter) initSegmenter();
                 if (cameraVideo.readyState >= 2 && !cameraVideo.paused) {
@@ -1147,35 +1397,42 @@
 
             // ----- 1. RECORDED CANVAS (#preview-canvas) -----
             ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-            const usePip = isScreenRecording || isWhiteboardActive || isPdfActive;
+            
+            // Pointer tool now forces Full Camera mode (Hides PDF & Board, disabling PIP)
+            const forceCamera = (S.wbTool === 'pointer');
+            
+            // Strictly distinguish between seeing a solid board vs seeing a PDF
+            const showSolidBoard = (!forceCamera && isWhiteboardActive && S.wbBg !== 'transparent');
+            let cameraDrawnAsBackground = false;
 
             // Render Backgrounds (Screen or PDF or Solid or Camera)
-            if (isScreenRecording && screenVideo.readyState >= 2) {
+            if (!forceCamera && isScreenRecording && screenVideo.readyState >= 2) {
                 const sRatio = screenVideo.videoWidth / screenVideo.videoHeight;
                 const cRatio = CANVAS_WIDTH / CANVAS_HEIGHT;
                 let sw = CANVAS_WIDTH, sh = CANVAS_HEIGHT, sx = 0, sy = 0;
                 if (sRatio > cRatio) { sh = sw / sRatio; sy = (CANVAS_HEIGHT - sh) / 2; } 
                 else { sw = sh * sRatio; sx = (CANVAS_WIDTH - sw) / 2; }
                 ctx.drawImage(screenVideo, sx, sy, sw, sh);
-                if (isWhiteboardActive && S.wbBg !== 'transparent') {
-                    ctx.fillStyle = S.wbBg === 'black' ? 'rgba(15, 23, 42, 0.98)' : 'rgba(248, 250, 252, 0.98)';
-                    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-                }
-            } else if (isPdfActive && pdfPagesArray.length > 0) {
-                // App Background behind PDF
+                
+                if (showSolidBoard) drawSolidBoard(ctx); // Draw board OVER screenshare if wanted
+
+            } else if (showSolidBoard) {
+                // Completely separates the size of the board from PDF, ignoring PDF while board is active.
+                drawSolidBoard(ctx);
+
+            } else if (!forceCamera && isPdfActive && pdfPagesArray.length > 0) {
+                // PDF is only drawn if showSolidBoard is FALSE
                 ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
                 
                 const currentZoom = pdfZoomMap[mediaQueue[activeMediaIndex].name] || 1.0;
-                let drawY = -pdfScrollY; // Start at negative scroll
+                let drawY = -pdfScrollY;
                 
-                // Only render pages that are currently in the viewport
                 for (let i = 0; i < pdfPagesArray.length; i++) {
                     const page = pdfPagesArray[i];
-                    // Fit to screen scale base
                     const baseScale = Math.min(CANVAS_WIDTH / page.w, CANVAS_HEIGHT / page.h);
                     const drawW = page.w * baseScale * currentZoom;
                     const drawH = page.h * baseScale * currentZoom;
-                    const drawX = (CANVAS_WIDTH - drawW) / 2; // Center horizontally
+                    const drawX = (CANVAS_WIDTH - drawW) / 2;
                     
                     if (drawY + drawH > 0 && drawY < CANVAS_HEIGHT) {
                         ctx.drawImage(page.canvas, drawX, drawY, drawW, drawH);
@@ -1183,23 +1440,8 @@
                     drawY += drawH + (PDF_PAGE_GAP * currentZoom);
                 }
 
-                if (isWhiteboardActive && S.wbBg !== 'transparent') {
-                    ctx.fillStyle = S.wbBg === 'black' ? 'rgba(15, 23, 42, 0.98)' : 'rgba(248, 250, 252, 0.98)';
-                    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-                }
-            } else if (isWhiteboardActive) {
-                if (S.wbBg === 'white') {
-                    ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-                    ctx.fillStyle = '#cbd5e1';
-                    for(let i=0; i<CANVAS_WIDTH; i+=40) { for(let j=0; j<CANVAS_HEIGHT; j+=40) { ctx.beginPath(); ctx.arc(i, j, 2, 0, Math.PI*2); ctx.fill(); } }
-                } else if (S.wbBg === 'black') {
-                    ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-                    ctx.fillStyle = '#334155';
-                    for(let i=0; i<CANVAS_WIDTH; i+=40) { for(let j=0; j<CANVAS_HEIGHT; j+=40) { ctx.beginPath(); ctx.arc(i, j, 1.5, 0, Math.PI*2); ctx.fill(); } }
-                } else {
-                    ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-                }
-            } else if (!usePip && cameraVideo.readyState >= 2) {
+            } else if (cameraVideo.readyState >= 2) {
+                // Render Camera Full Screen (Either forceCamera is true, or transparent board with no media)
                 ctx.save(); ctx.translate(CANVAS_WIDTH/2, CANVAS_HEIGHT/2);
                 if (S.isMirrored) ctx.scale(-1, 1);
                 
@@ -1212,12 +1454,26 @@
                 
                 drawCameraFeed(ctx, cameraVideo, -drawW/2 - pxOff, -drawH/2 + pyOff, drawW, drawH, S.effect);
                 ctx.restore();
+                cameraDrawnAsBackground = true;
+            } else {
+                ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
             }
 
-            // Whiteboard Drawings Layer
-            if (isWhiteboardActive || isScreenRecording || isPdfActive) {
-                ctx.drawImage(drawingCanvas, 0, 0);
+            // Drawings Layer compositing
+            if (!forceCamera) {
+                if (showSolidBoard || (!isPdfActive && isWhiteboardActive) || isScreenRecording) {
+                    if (needsWbRedraw) {
+                        redrawWbStrokes();
+                        needsWbRedraw = false;
+                    }
+                    ctx.drawImage(drawingCanvas, 0, 0);
+                } else if (isPdfActive && !showSolidBoard) {
+                    renderMediaStrokes(mediaQueue[activeMediaIndex]);
+                    ctx.drawImage(drawingCanvas, 0, 0);
+                }
             }
+
+            const usePip = !forceCamera && !cameraDrawnAsBackground && (isScreenRecording || showSolidBoard || isPdfActive);
 
             // PIP Camera Render
             if (usePip && cameraVideo.readyState >= 2) {
@@ -1267,12 +1523,10 @@
             // ----- 2. UI CANVAS (#ui-canvas) (NOT RECORDED) -----
             uiCtx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
             
-            // Draw Visual Overlay Cue when Hovering for PIP Resize
-            // (Checks `isRecording` to hide the text while recording)
             if (usePip && isHoveringPip && !isDraggingPip && !isDrawing) {
                 uiCtx.beginPath();
                 uiCtx.arc(pipX, pipY, S.pipSize, 0, Math.PI * 2);
-                uiCtx.fillStyle = 'rgba(0, 0, 0, 0.4)'; // Darken overlay
+                uiCtx.fillStyle = 'rgba(0, 0, 0, 0.4)'; 
                 uiCtx.fill();
                 
                 if(!isRecording) {
@@ -1327,7 +1581,6 @@
                 ctx.lineWidth = size * 2.5;
                 ctx.globalCompositeOperation = 'source-over';
                 ctx.strokeStyle = color;
-                // Note: Alpha 0.35 simulates natural marker transparency
                 ctx.globalAlpha = 0.35; 
             } else {
                 ctx.lineWidth = size;
@@ -1337,9 +1590,9 @@
             }
         }
 
-        function redrawWhiteboard() {
+        function redrawWbStrokes() {
             drawCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-            for (const stroke of strokes) {
+            for (const stroke of wbStrokes) {
                 if (stroke.points.length === 0) continue;
                 applyToolStyle(drawCtx, stroke.tool, stroke.color, stroke.size);
                 drawCtx.beginPath();
@@ -1351,6 +1604,40 @@
             }
         }
 
+        function renderMediaStrokes(media) {
+            drawCtx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            if (!media || !media.strokes || media.strokes.length === 0) return;
+
+            const currentZoom = pdfZoomMap[media.name] || 1.0;
+            drawCtx.save();
+            drawCtx.translate(CANVAS_WIDTH/2, -pdfScrollY);
+            drawCtx.scale(currentZoom, currentZoom);
+            drawCtx.translate(-CANVAS_WIDTH/2, 0);
+
+            for (const stroke of media.strokes) {
+                if (stroke.points.length === 0) continue;
+
+                // Viewport culling optimization
+                let minY = stroke.points[0].y, maxY = stroke.points[0].y;
+                for (let i = 1; i < stroke.points.length; i++) {
+                    if (stroke.points[i].y < minY) minY = stroke.points[i].y;
+                    if (stroke.points[i].y > maxY) maxY = stroke.points[i].y;
+                }
+                const screenMinY = minY * currentZoom - pdfScrollY;
+                const screenMaxY = maxY * currentZoom - pdfScrollY;
+                if (screenMaxY < -100 || screenMinY > CANVAS_HEIGHT + 100) continue; 
+
+                applyToolStyle(drawCtx, stroke.tool, stroke.color, stroke.size);
+                drawCtx.beginPath();
+                drawCtx.moveTo(stroke.points[0].x, stroke.points[0].y);
+                for (let i = 1; i < stroke.points.length; i++) {
+                    drawCtx.lineTo(stroke.points[i].x, stroke.points[i].y);
+                }
+                drawCtx.stroke();
+            }
+            drawCtx.restore();
+        }
+
         function distToSegment(p, v, w) {
             let l2 = (w.x - v.x)**2 + (w.y - v.y)**2;
             if (l2 === 0) return Math.hypot(p.x - v.x, p.y - v.y);
@@ -1360,23 +1647,34 @@
         }
 
         function eraseStrokeAt(pos) {
-            for (let i = strokes.length - 1; i >= 0; i--) {
-                const stroke = strokes[i];
+            const activeStrokes = getActiveStrokes();
+            let checkPos = pos;
+            if (isPdfActive && S.wbBg === 'transparent') {
+                const currentZoom = pdfZoomMap[mediaQueue[activeMediaIndex].name] || 1.0;
+                checkPos = {
+                    x: (pos.x - CANVAS_WIDTH/2) / currentZoom + CANVAS_WIDTH/2,
+                    y: (pos.y + pdfScrollY) / currentZoom
+                };
+            }
+
+            for (let i = activeStrokes.length - 1; i >= 0; i--) {
+                const stroke = activeStrokes[i];
                 let hit = false;
                 const threshold = (parseInt(stroke.size) / 2) + 5;
                 if (stroke.points.length === 1) {
-                    if (Math.hypot(pos.x - stroke.points[0].x, pos.y - stroke.points[0].y) < threshold) hit = true;
+                    if (Math.hypot(checkPos.x - stroke.points[0].x, checkPos.y - stroke.points[0].y) < threshold) hit = true;
                 } else {
                     for (let j = 0; j < stroke.points.length - 1; j++) {
-                        if (distToSegment(pos, stroke.points[j], stroke.points[j+1]) < threshold) {
+                        if (distToSegment(checkPos, stroke.points[j], stroke.points[j+1]) < threshold) {
                             hit = true; break;
                         }
                     }
                 }
                 if (hit) {
-                    strokes.splice(i, 1);
-                    redrawWhiteboard();
-                    return true; // Erase one continuous stroke per frame segment
+                    activeStrokes.splice(i, 1);
+                    if (!isPdfActive || S.wbBg !== 'transparent') needsWbRedraw = true;
+                    saveStrokes();
+                    return true; 
                 }
             }
             return false;
@@ -1391,9 +1689,10 @@
             };
         }
 
-        // Central Handle for Scrolling via top layered uiCanvas
         uiCanvas.addEventListener('wheel', (e) => {
-            const usePip = isScreenRecording || isWhiteboardActive || isPdfActive;
+            const forceCamera = (S.wbTool === 'pointer');
+            const showSolidBoard = (isWhiteboardActive && S.wbBg !== 'transparent');
+            const usePip = !forceCamera && (isScreenRecording || isWhiteboardActive || isPdfActive);
             
             // 1. PIP Resize
             if (usePip && isHoveringPip && !e.ctrlKey && !e.metaKey) {
@@ -1409,28 +1708,28 @@
             }
 
             // 2. Presentation Zoom & Scroll
-            if (isPdfActive) {
+            if (!forceCamera && isPdfActive && !showSolidBoard) {
                 e.preventDefault();
                 const docName = mediaQueue[activeMediaIndex].name;
                 
                 if (e.ctrlKey || e.metaKey) {
-                    // Zoom IN/OUT
                     const zoomDelta = Math.sign(e.deltaY) * -0.1;
                     pdfZoomMap[docName] = Math.max(0.5, Math.min(4.0, (pdfZoomMap[docName] || 1.0) + zoomDelta));
                     recalcPdfScrollBounds();
                     saveSettings();
                 } else {
-                    // Pan Scroll Y
                     const scrollDelta = e.deltaY;
                     pdfScrollY = Math.max(0, Math.min(maxPdfScrollY, pdfScrollY + scrollDelta));
                     updateScrollThumbPosition();
                 }
+                showPageNumberOverlay();
             }
         }, { passive: false });
 
         uiCanvas.addEventListener('mousedown', (e) => {
             const pos = getMousePos(e);
-            const usePip = isScreenRecording || isWhiteboardActive || isPdfActive;
+            const forceCamera = (S.wbTool === 'pointer');
+            const usePip = !forceCamera && (isScreenRecording || isWhiteboardActive || isPdfActive);
             
             if (usePip) {
                 const dist = Math.hypot(pos.x - pipX, pos.y - pipY);
@@ -1443,6 +1742,16 @@
             if (isWhiteboardActive) {
                 isDrawing = true; lastX = pos.x; lastY = pos.y;
                 
+                let checkPos = pos;
+                // Make sure we only map to PDF coordinates if the PDF is actively being shown
+                if (isPdfActive && S.wbBg === 'transparent') {
+                    const currentZoom = pdfZoomMap[mediaQueue[activeMediaIndex].name] || 1.0;
+                    checkPos = {
+                        x: (pos.x - CANVAS_WIDTH/2) / currentZoom + CANVAS_WIDTH/2,
+                        y: (pos.y + pdfScrollY) / currentZoom
+                    };
+                }
+                
                 if (S.wbTool === 'stroke-eraser') {
                     eraseStrokeAt(pos);
                 } else {
@@ -1451,19 +1760,18 @@
                     currentStroke = {
                         tool: S.wbTool, color: color,
                         size: S.wbSize,
-                        points: [pos]
+                        points: [checkPos]
                     };
-                    strokes.push(currentStroke);
-                    
-                    // Initial dot click
-                    redrawWhiteboard();
+                    getActiveStrokes().push(currentStroke);
+                    if (!isPdfActive || S.wbBg !== 'transparent') needsWbRedraw = true;
                 }
             }
         });
 
         uiCanvas.addEventListener('mousemove', (e) => {
             const pos = getMousePos(e);
-            const usePip = isScreenRecording || isWhiteboardActive || isPdfActive;
+            const forceCamera = (S.wbTool === 'pointer');
+            const usePip = !forceCamera && (isScreenRecording || isWhiteboardActive || isPdfActive);
             isHoveringPip = false;
 
             if (usePip && !isDraggingPip && !isDrawing) {
@@ -1482,19 +1790,27 @@
             }
 
             if (isDrawing && isWhiteboardActive) {
+                let checkPos = pos;
+                if (isPdfActive && S.wbBg === 'transparent') {
+                    const currentZoom = pdfZoomMap[mediaQueue[activeMediaIndex].name] || 1.0;
+                    checkPos = {
+                        x: (pos.x - CANVAS_WIDTH/2) / currentZoom + CANVAS_WIDTH/2,
+                        y: (pos.y + pdfScrollY) / currentZoom
+                    };
+                }
+
                 if (S.wbTool === 'stroke-eraser') {
                     eraseStrokeAt(pos);
                 } else if (currentStroke) {
-                    currentStroke.points.push(pos);
-                    // REDRAW ENTIRE BOARD to prevent dark dot overlaps on highlighters/translucent strokes
-                    redrawWhiteboard(); 
+                    currentStroke.points.push(checkPos);
+                    if (!isPdfActive || S.wbBg !== 'transparent') needsWbRedraw = true; 
                 }
                 lastX = pos.x; lastY = pos.y;
             }
         });
 
-        uiCanvas.addEventListener('mouseleave', () => { isHoveringPip = false; isDraggingPip = false; isDrawing = false; currentStroke = null; });
-        window.addEventListener('mouseup', () => { isDraggingPip = false; isDrawing = false; currentStroke = null; uiCanvas.style.cursor = isWhiteboardActive ? 'crosshair' : 'default'; });
+        uiCanvas.addEventListener('mouseleave', () => { isHoveringPip = false; isDraggingPip = false; if(isDrawing) saveStrokes(); isDrawing = false; currentStroke = null; });
+        window.addEventListener('mouseup', () => { if(isDrawing) saveStrokes(); isDraggingPip = false; isDrawing = false; currentStroke = null; uiCanvas.style.cursor = isWhiteboardActive ? 'crosshair' : 'default'; });
 
         // Touch mapping
         uiCanvas.addEventListener('touchstart', (e) => { e.clientX = e.touches[0].clientX; e.clientY = e.touches[0].clientY; uiCanvas.dispatchEvent(new MouseEvent('mousedown', e)); e.preventDefault(); }, {passive: false});
@@ -1533,7 +1849,7 @@
 
             recordedChunks = [];
             const fps = parseInt(fpsSelect.value || 60);
-            const canvasStream = canvas.captureStream(fps); // ONLY captures preview-canvas
+            const canvasStream = canvas.captureStream(fps);
             const audioTracks = audioDest ? audioDest.stream.getAudioTracks() : audioStream.getAudioTracks();
             const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...audioTracks]);
 
@@ -1560,7 +1876,6 @@
             isPaused = false;
             isRecording = true;
             
-            // UI Toggle
             startBtn.classList.add('hidden');
             pauseBtn.classList.remove('hidden'); pauseBtn.classList.add('flex'); pauseBtn.disabled = false;
             stopBtn.classList.remove('hidden'); stopBtn.classList.add('flex'); stopBtn.disabled = false;
@@ -1607,12 +1922,19 @@
                 isWhiteboardActive = S.wbTool !== 'pointer';
                 uiCanvas.style.cursor = isWhiteboardActive ? 'crosshair' : 'default';
                 saveSettings();
+                needsWbRedraw = true; // Added
+                updateScrollbarVisibility(); // Added
             });
         });
 
         document.getElementById('wb-clear').addEventListener('click', () => {
-            strokes = [];
-            redrawWhiteboard();
+            if (isPdfActive && activeMediaIndex >= 0 && S.wbBg === 'transparent') {
+                mediaQueue[activeMediaIndex].strokes = [];
+            } else {
+                wbStrokes = [];
+                needsWbRedraw = true;
+            }
+            saveStrokes();
         });
 
         document.getElementById('mirror-btn').addEventListener('click', (e) => { S.isMirrored = !S.isMirrored; toggleBtnColor('mirror-btn', S.isMirrored); saveSettings(); });
